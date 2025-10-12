@@ -50,7 +50,10 @@ const userSchema = new mongoose.Schema(
       default: 'local',
       required: true,
     },
-    
+    hasResume: {
+      type: Boolean,
+      default: false
+    },
     // 🆕 GitHub Project Integration fields (separate from login)
     githubProjectToken: {
       type: String,

@@ -25,7 +25,7 @@ const Sidebar = () => {
   const others = [
     { title: "Applications", icon: <PenTool className="w-5 h-5" />, path: "/applications" },
     { title: "Projects", icon: <BarChart2 className="w-5 h-5" />, path: "/projects" },
-    { title: "Profile", icon: <UserRound className="w-5 h-5" />, path: "/profile" },
+    { title: "Profile", icon: <UserRound className="w-5 h-5" />, path: "/Profile" },
     { title: "Settings", icon: <Settings className="w-5 h-5" />, path: "/settings" },
   ];
 

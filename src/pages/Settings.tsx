@@ -150,12 +150,21 @@ const SettingsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Settings</h1>
 
         <div className="flex gap-6">
           {/* Sidebar Navigation */}
-          <div className="w-64 bg-white rounded-lg shadow-sm p-4 h-fit">
+          <div className="w-64 bg-white rounded-lg shadow-sm p-4 h-fit sticky top-6">
             <nav className="space-y-1">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
@@ -178,10 +187,10 @@ const SettingsPage = () => {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 bg-white rounded-lg shadow-sm p-8">
+          <div className="flex-1 bg-white rounded-lg shadow-sm p-8 transition-all duration-300">
             {/* Profile Tab */}
             {activeTab === 'profile' && (
-              <div>
+              <div className="animate-fadeIn">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Profile Settings</h2>
                 
                 {/* Profile Photo */}
@@ -312,7 +321,7 @@ const SettingsPage = () => {
 
                 <button
                   onClick={handleSaveProfile}
-                  className="mt-8 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  className="mt-8 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
                 >
                   <Check className="w-5 h-5" />
                   Save Changes
@@ -322,7 +331,7 @@ const SettingsPage = () => {
 
             {/* Security Tab */}
             {activeTab === 'security' && (
-              <div>
+              <div className="animate-fadeIn">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Password & Security</h2>
                 
                 <div className="space-y-6">
@@ -402,7 +411,7 @@ const SettingsPage = () => {
 
                 <button
                   onClick={handleSaveSecurity}
-                  className="mt-8 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  className="mt-8 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
                 >
                   <Check className="w-5 h-5" />
                   Save Changes
@@ -410,164 +419,9 @@ const SettingsPage = () => {
               </div>
             )}
 
-            {/* Appearance Tab */}
-            {activeTab === 'appearance' && (
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Appearance Settings</h2>
-                
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      <Monitor className="inline w-4 h-4 mr-2" />
-                      Theme
-                    </label>
-                    <div className="grid grid-cols-3 gap-4">
-                      {[
-                        { value: 'light', label: 'Light', desc: 'Clean and bright' },
-                        { value: 'dark', label: 'Dark', desc: 'Easy on the eyes' },
-                        { value: 'auto', label: 'Auto', desc: 'Matches system' }
-                      ].map((theme) => (
-                        <label
-                          key={theme.value}
-                          className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${
-                            appearance.theme === theme.value
-                              ? 'border-blue-600 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="theme"
-                            value={theme.value}
-                            checked={appearance.theme === theme.value}
-                            onChange={(e) => setAppearance({ ...appearance, theme: e.target.value })}
-                            className="sr-only"
-                          />
-                          <div className="text-center">
-                            <div className="font-medium text-gray-900">{theme.label}</div>
-                            <div className="text-sm text-gray-500">{theme.desc}</div>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-3">View Density</label>
-                    <div className="grid grid-cols-2 gap-4">
-                      {[
-                        { value: 'compact', label: 'Compact', desc: 'More content on screen' },
-                        { value: 'comfortable', label: 'Comfortable', desc: 'Balanced spacing' }
-                      ].map((density) => (
-                        <label
-                          key={density.value}
-                          className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${
-                            appearance.viewDensity === density.value
-                              ? 'border-blue-600 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="density"
-                            value={density.value}
-                            checked={appearance.viewDensity === density.value}
-                            onChange={(e) => setAppearance({ ...appearance, viewDensity: e.target.value })}
-                            className="sr-only"
-                          />
-                          <div className="text-center">
-                            <div className="font-medium text-gray-900">{density.label}</div>
-                            <div className="text-sm text-gray-500">{density.desc}</div>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleSaveAppearance}
-                  className="mt-8 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                >
-                  <Check className="w-5 h-5" />
-                  Save Changes
-                </button>
-              </div>
-            )}
-
-            {/* Account Tab */}
-            {activeTab === 'account' && (
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Management</h2>
-                
-                <div className="space-y-6">
-                  <div className="border border-gray-200 rounded-lg p-6">
-                    <div className="flex items-start gap-4">
-                      <Download className="w-6 h-6 text-blue-600 mt-1" />
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Export Your Data</h3>
-                        <p className="text-sm text-gray-600 mb-4">
-                          Download a copy of your account data, including your profile, projects, and tasks. You'll receive an email with a download link.
-                        </p>
-                        <button
-                          onClick={handleExportData}
-                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
-                        >
-                          Request Data Export
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border border-red-200 rounded-lg p-6 bg-red-50">
-                    <div className="flex items-start gap-4">
-                      <UserX className="w-6 h-6 text-red-600 mt-1" />
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Deactivate Account</h3>
-                        <p className="text-sm text-gray-600 mb-4">
-                          Temporarily deactivate your account. You can reactivate it anytime by logging back in. Your data will be preserved.
-                        </p>
-                        <button
-                          onClick={handleDeactivateAccount}
-                          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm"
-                        >
-                          Deactivate Account
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border border-red-300 rounded-lg p-6 bg-red-100">
-                    <div className="flex items-start gap-4">
-                      <UserX className="w-6 h-6 text-red-700 mt-1" />
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Account Permanently</h3>
-                        <p className="text-sm text-gray-600 mb-2">
-                          <strong>Warning:</strong> This action cannot be undone. All your data, projects, and tasks will be permanently deleted.
-                        </p>
-                        <p className="text-sm text-gray-600 mb-4">
-                          Please contact support at <a href="mailto:support@company.com" className="text-blue-600 hover:underline">support@company.com</a> to request account deletion.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Toast Notification */}
-      {toast.show && (
-        <div className="fixed bottom-6 right-6 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-slide-up">
-          <Check className="w-5 h-5" />
-          <span>{toast.message}</span>
-        </div>
-      )}
-        {/* Notifications Tab */}
+            {/* Notifications Tab */}
             {activeTab === 'notifications' && (
-              <div>
+              <div className="animate-fadeIn">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Notification Preferences</h2>
                 
                 <div className="space-y-6">
@@ -634,7 +488,7 @@ const SettingsPage = () => {
 
                 <button
                   onClick={handleSaveNotifications}
-                  className="mt-8 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  className="mt-8 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
                 >
                   <Check className="w-5 h-5" />
                   Save Changes
@@ -644,7 +498,7 @@ const SettingsPage = () => {
 
             {/* Work Preferences Tab */}
             {activeTab === 'work' && (
-              <div>
+              <div className="animate-fadeIn">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Work Preferences</h2>
                 
                 <div className="space-y-6">
@@ -726,16 +580,237 @@ const SettingsPage = () => {
 
                 <button
                   onClick={handleSaveWorkPrefs}
-                  className="mt-8 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  className="mt-8 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
                 >
                   <Check className="w-5 h-5" />
                   Save Changes
                 </button>
               </div>
             )}
+
+            {/* Privacy Tab */}
+            {activeTab === 'privacy' && (
+              <div className="animate-fadeIn">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Privacy Settings</h2>
+                
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">Profile Visibility</label>
+                    <select
+                      value={privacy.profileVisibility}
+                      onChange={(e) => setPrivacy({ ...privacy, profileVisibility: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="public">Public - Anyone can see your profile</option>
+                      <option value="team">Team Only - Only team members can see your profile</option>
+                      <option value="private">Private - Only you can see your profile</option>
+                    </select>
+                  </div>
+
+                  <div className="border-t pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-900">Show Online Status</h3>
+                        <p className="text-sm text-gray-500">Let others see when you're online</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={privacy.showOnlineStatus}
+                          onChange={(e) => setPrivacy({ ...privacy, showOnlineStatus: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-900">Share Work Hours</h3>
+                        <p className="text-sm text-gray-500">Allow team members to see your working hours</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={privacy.shareWorkHours}
+                          onChange={(e) => setPrivacy({ ...privacy, shareWorkHours: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => showToast('Privacy settings saved!')}
+                  className="mt-8 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
+                >
+                  <Check className="w-5 h-5" />
+                  Save Changes
+                </button>
+              </div>
+            )}
+
+            {/* Appearance Tab */}
+            {activeTab === 'appearance' && (
+              <div className="animate-fadeIn">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Appearance Settings</h2>
+                
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      <Monitor className="inline w-4 h-4 mr-2" />
+                      Theme
+                    </label>
+                    <div className="grid grid-cols-3 gap-4">
+                      {[
+                        { value: 'light', label: 'Light', desc: 'Clean and bright' },
+                        { value: 'dark', label: 'Dark', desc: 'Easy on the eyes' },
+                        { value: 'auto', label: 'Auto', desc: 'Matches system' }
+                      ].map((theme) => (
+                        <label
+                          key={theme.value}
+                          className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${
+                            appearance.theme === theme.value
+                              ? 'border-blue-600 bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="theme"
+                            value={theme.value}
+                            checked={appearance.theme === theme.value}
+                            onChange={(e) => setAppearance({ ...appearance, theme: e.target.value })}
+                            className="sr-only"
+                          />
+                          <div className="text-center">
+                            <div className="font-medium text-gray-900">{theme.label}</div>
+                            <div className="text-sm text-gray-500">{theme.desc}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">View Density</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      {[
+                        { value: 'compact', label: 'Compact', desc: 'More content on screen' },
+                        { value: 'comfortable', label: 'Comfortable', desc: 'Balanced spacing' }
+                      ].map((density) => (
+                        <label
+                          key={density.value}
+                          className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${
+                            appearance.viewDensity === density.value
+                              ? 'border-blue-600 bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="density"
+                            value={density.value}
+                            checked={appearance.viewDensity === density.value}
+                            onChange={(e) => setAppearance({ ...appearance, viewDensity: e.target.value })}
+                            className="sr-only"
+                          />
+                          <div className="text-center">
+                            <div className="font-medium text-gray-900">{density.label}</div>
+                            <div className="text-sm text-gray-500">{density.desc}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleSaveAppearance}
+                  className="mt-8 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
+                >
+                  <Check className="w-5 h-5" />
+                  Save Changes
+                </button>
+              </div>
+            )}
+
+            {/* Account Tab */}
+            {activeTab === 'account' && (
+              <div className="animate-fadeIn">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Management</h2>
+                
+                <div className="space-y-6">
+                  <div className="border border-gray-200 rounded-lg p-6">
+                    <div className="flex items-start gap-4">
+                      <Download className="w-6 h-6 text-blue-600 mt-1" />
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Export Your Data</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Download a copy of your account data, including your profile, projects, and tasks. You'll receive an email with a download link.
+                        </p>
+                        <button
+                          onClick={handleExportData}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
+                        >
+                          Request Data Export
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border border-red-200 rounded-lg p-6 bg-red-50">
+                    <div className="flex items-start gap-4">
+                      <UserX className="w-6 h-6 text-red-600 mt-1" />
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Deactivate Account</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Temporarily deactivate your account. You can reactivate it anytime by logging back in. Your data will be preserved.
+                        </p>
+                        <button
+                          onClick={handleDeactivateAccount}
+                          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm"
+                        >
+                          Deactivate Account
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border border-red-300 rounded-lg p-6 bg-red-100">
+                    <div className="flex items-start gap-4">
+                      <UserX className="w-6 h-6 text-red-700 mt-1" />
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Account Permanently</h3>
+                        <p className="text-sm text-gray-600 mb-2">
+                          <strong>Warning:</strong> This action cannot be undone. All your data, projects, and tasks will be permanently deleted.
+                        </p>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Please contact support at <a href="mailto:support@company.com" className="text-blue-600 hover:underline">support@company.com</a> to request account deletion.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className="fixed bottom-6 right-6 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 transition-all duration-300 ease-in-out z-50">
+          <Check className="w-5 h-5" />
+          <span>{toast.message}</span>
+        </div>
+      )}
     </div>
   );
 };
 
-export default SettingsPage;  
- 
+export default SettingsPage;

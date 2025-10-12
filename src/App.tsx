@@ -12,6 +12,7 @@ import JobSearch from "./pages/Job";
 import Applications from "./pages/Applications"; 
 import SettingsPage from "./pages/Settings";
 import ProjectTracker from "./pages/Project";
+import Profile from "./pages/Profile";
 
 const router = createBrowserRouter([
   {
@@ -37,6 +38,10 @@ const router = createBrowserRouter([
       {
         path: "settings",
         element: <SettingsPage />,
+      },
+      {
+        path: "Profile",
+        element: <Profile />,
       },
     ],
     errorElement: <NotFoundPage />,

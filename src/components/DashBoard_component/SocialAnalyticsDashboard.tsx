@@ -11,21 +11,23 @@ import {
 import type { TooltipProps } from 'recharts';
 import { MoreVertical, X } from 'lucide-react';
 
-// Define allowed chart types
 type ChartType = 'followers' | 'growth' | 'posts' | 'interactions' | null;
 
-// Tooltip type-safe component
+type PayloadItem = {
+  payload: { day: string; value: number };
+};
+
 const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload }) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload as { day: string; value: number };
+  const items = payload as PayloadItem[] | undefined;
+
+  if (active && items && items.length) {
+    const data = items[0].payload;
     return (
       <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200">
         <p className="text-xs font-semibold text-gray-900">{data.day}</p>
         <p className="text-xs text-gray-600">
           Value:{' '}
-          <span className="font-semibold">
-            {data.value?.toLocaleString() ?? '0'}
-          </span>
+          <span className="font-semibold">{data.value?.toLocaleString() ?? '0'}</span>
         </p>
       </div>
     );
@@ -36,7 +38,6 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
 export default function SocialAnalyticsDashboard() {
   const [selectedChart, setSelectedChart] = useState<ChartType>(null);
 
-  // Data for charts
   const followersData = [
     { day: 'Day 1', value: 180000 },
     { day: 'Day 2', value: 200000 },
@@ -377,7 +378,6 @@ export default function SocialAnalyticsDashboard() {
   );
 }
 
-// Reusable stat card
 const StatCard: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <div className="bg-gray-50 rounded-lg p-4">
     <p className="text-xs text-gray-500 mb-1">{label}</p>
@@ -385,7 +385,6 @@ const StatCard: React.FC<{ label: string; value: string }> = ({ label, value }) 
   </div>
 );
 
-// Reusable chart summary card
 const ChartCard: React.FC<{
   title: string;
   subtitle: string;

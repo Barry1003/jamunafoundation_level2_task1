@@ -9,7 +9,8 @@ import passport from "./config/passport.js";
 import authRoutes from "./routes/authRoutes.js";
 import githubRoutes from "./routes/githubRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
-import applicationRoutes from "./routes/applicationRoutes.js"; // 🆕 NEW - Application routes
+import applicationRoutes from "./routes/applicationRoutes.js";
+import resumeRoutes from  "./routes/resume.js"
 
 dotenv.config();
 
@@ -35,8 +36,8 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production", // true in production (HTTPS)
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000,
     },
   })
 );
@@ -71,6 +72,9 @@ app.use("/api/projects", projectRoutes);
 
 // Application routes (Job Applications CRUD)
 app.use("/api/applications", applicationRoutes);
+
+// Resume routes (Resume CRUD) 👈 ADD THIS
+app.use("/api/resume", resumeRoutes);
 
 // ==========================================
 // JOBS ENDPOINT (RAPID API)

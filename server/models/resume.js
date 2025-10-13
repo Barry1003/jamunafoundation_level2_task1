@@ -5,10 +5,10 @@ const experienceSchema = new mongoose.Schema({
   title: { type: String, required: true },
   company: { type: String, required: true },
   startDate: { type: String, required: true },
-  endDate: { type: String },
-  description: { type: String },
+  endDate: { type: String, default: '' },
+  description: { type: String, default: '' },
   current: { type: Boolean, default: false }
-});
+}, { _id: false }); // ✅ Add this to disable _id generation
 
 const resumeSchema = new mongoose.Schema({
   userId: {
@@ -18,7 +18,8 @@ const resumeSchema = new mongoose.Schema({
     unique: true
   },
   
-  // Personal/Contact Info
+  // Personal Info
+  fullName: { type: String, default: '' },
   jobTitle: { type: String, default: '' },
   phone: { type: String, default: '' },
   location: { type: String, default: '' },
@@ -29,13 +30,14 @@ const resumeSchema = new mongoose.Schema({
     facebook: { type: String, default: '' },
     twitter: { type: String, default: '' },
     linkedin: { type: String, default: '' },
-    instagram: { type: String, default: '' }
+    instagram: { type: String, default: '' },
+    github: { type: String, default: '' } // Added missing github
   },
   
   // Professional Info
   experiences: [experienceSchema],
   
-  // 🔗 Reference existing projects instead of duplicating
+  // Reference existing projects
   selectedProjects: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Project'

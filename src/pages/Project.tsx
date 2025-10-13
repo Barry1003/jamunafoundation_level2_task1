@@ -246,6 +246,7 @@ const ProjectTracker: React.FC = () => {
     setError(null);
     
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const projectData: any = {
         name: newProject.name,
         description: newProject.description,

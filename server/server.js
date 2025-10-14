@@ -6,11 +6,13 @@ import dotenv from "dotenv";
 import session from "express-session";
 import passport from "./config/passport.js";
 
+// Import routes
 import authRoutes from "./routes/authRoutes.js";
+import userRoutes from "./routes/userRoutes.js";   
 import githubRoutes from "./routes/githubRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import applicationRoutes from "./routes/applicationRoutes.js";
-import resumeRoutes from  "./routes/resume.js"
+import resumeRoutes from "./routes/resume.js";
 
 dotenv.config();
 
@@ -19,7 +21,8 @@ const app = express();
 // ==========================================
 // MIDDLEWARE
 // ==========================================
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Configure CORS to allow credentials
 app.use(
@@ -61,11 +64,14 @@ mongoose
 // ROUTES
 // ==========================================
 
-// Auth Routes (Login, Register, GitHub OAuth Login)
+// Auth Routes (Login, Register, GitHub OAuth Login, Password Management)
 app.use("/api/auth", authRoutes);
 
-// GitHub Routes (Project Integration - Connect GitHub, Fetch Repos, Disconnect)
-app.use("/api/github", githubRoutes);
+// User Routes (Profile Management, Export Data, Deactivate Account)
+app.use("/api/users", userRoutes);
+
+// ✅ FIXED: GitHub Routes now mounted at /api/auth/github to match OAuth callback
+app.use("/api/auth/github", githubRoutes);
 
 // Project routes 
 app.use("/api/projects", projectRoutes);
@@ -73,7 +79,7 @@ app.use("/api/projects", projectRoutes);
 // Application routes (Job Applications CRUD)
 app.use("/api/applications", applicationRoutes);
 
-// Resume routes (Resume CRUD) 👈 ADD THIS
+// Resume routes (Resume CRUD)
 app.use("/api/resume", resumeRoutes);
 
 // ==========================================
@@ -122,10 +128,42 @@ app.get("/api/jobs", (req, res) => {
 });
 
 // ==========================================
+// HEALTH CHECK
+// ==========================================
+app.get("/api/health", (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+// ==========================================
 // ROOT CHECK
 // ==========================================
 app.get("/", (req, res) => {
-  res.send("🚀 Job Tracker + Auth API is running...");
+  res.send("🚀 EmployX API is running...");
+});
+
+// ==========================================
+// 404 HANDLER
+// ==========================================
+app.all("/*splat", (req, res) => {
+  res.status(404).json({ 
+    message: "Route not found",
+    path: req.originalUrl 
+  });
+});
+
+// ==========================================
+// ERROR HANDLER
+// ==========================================
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    message: "Something went wrong!",
+    error: process.env.NODE_ENV === "development" ? err.message : undefined
+  });
 });
 
 // ==========================================

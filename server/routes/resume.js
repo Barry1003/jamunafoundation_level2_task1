@@ -1,6 +1,7 @@
 // routes/resumeRoutes.js
 import express from 'express';
 import Resume from '../models/resume.js';
+import Project from '../models/Project.js'; // ✅ Add this import
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -10,13 +11,12 @@ router.get('/:userId', protect, async (req, res) => {
   try {
     console.log('📋 Fetching resume for user:', req.params.userId);
     
-    let resume = await Resume.findOne({ userId: req.params.userId })
-      .populate('selectedProjects')
-      .populate('userId', 'fullName email avatar username');
+    // First, get resume without population to see raw data
+    let resumeRaw = await Resume.findOne({ userId: req.params.userId });
     
-    if (!resume) {
+    if (!resumeRaw) {
       console.log('📝 No resume found, creating new one');
-      resume = await Resume.create({ 
+      resumeRaw = await Resume.create({ 
         userId: req.params.userId,
         fullName: '',
         jobTitle: '',
@@ -27,7 +27,8 @@ router.get('/:userId', protect, async (req, res) => {
           facebook: '',
           twitter: '',
           linkedin: '',
-          instagram: ''
+          instagram: '',
+          github: ''
         },
         experiences: [],
         selectedProjects: [],
@@ -37,7 +38,29 @@ router.get('/:userId', protect, async (req, res) => {
       });
     }
     
-    console.log('✅ Resume sent');
+    console.log('📦 Raw selectedProjects (as stored in DB):', resumeRaw.selectedProjects);
+    console.log('📦 Number of selected project IDs:', resumeRaw.selectedProjects?.length || 0);
+    
+    // Now populate
+    let resume = await Resume.findOne({ userId: req.params.userId })
+      .populate({
+        path: 'selectedProjects',
+        select: 'name description status technologies links createdAt'
+      })
+      .populate('userId', 'fullName email avatar username');
+    
+    console.log('✅ Resume fetched with population');
+    console.log('📦 Populated Projects Count:', resume.selectedProjects?.length || 0);
+    
+    if (resume.selectedProjects && resume.selectedProjects.length > 0) {
+      console.log('📦 First populated project:', JSON.stringify(resume.selectedProjects[0], null, 2));
+    } else {
+      console.log('⚠️ No projects were populated - this means either:');
+      console.log('   1. The project IDs don\'t exist in the Project collection');
+      console.log('   2. The ref name doesn\'t match the model name');
+      console.log('   3. The projects were deleted');
+    }
+    
     res.json(resume);
   } catch (error) {
     console.error('❌ Error fetching resume:', error);
@@ -49,19 +72,35 @@ router.get('/:userId', protect, async (req, res) => {
 router.put('/:userId', protect, async (req, res) => {
   try {
     console.log('💾 Updating resume for user:', req.params.userId);
-    console.log('Data received:', req.body);
+    console.log('📥 Data received:', JSON.stringify(req.body, null, 2));
+    console.log('📦 Selected Project IDs received:', req.body.selectedProjects);
+    
+    // Validate selectedProjects are valid ObjectIds (if provided)
+    if (req.body.selectedProjects && Array.isArray(req.body.selectedProjects)) {
+      console.log('✅ Validating project IDs...');
+      req.body.selectedProjects.forEach((id, index) => {
+        console.log(`   Project ${index + 1}:`, id);
+      });
+    }
     
     const resume = await Resume.findOneAndUpdate(
       { userId: req.params.userId },
       req.body,
       { new: true, upsert: true, runValidators: true }
-    ).populate('selectedProjects');
+    ).populate({
+      path: 'selectedProjects',
+      select: 'name description status technologies links createdAt'
+    });
     
-    console.log('✅ Resume updated');
+    console.log('✅ Resume updated successfully');
+    console.log('📦 Populated Projects Count:', resume.selectedProjects?.length || 0);
+    console.log('📦 Populated Projects:', JSON.stringify(resume.selectedProjects, null, 2));
+    
     res.json(resume);
   } catch (error) {
     console.error('❌ Error updating resume:', error);
-    res.status(400).json({ message: error.message });
+    console.error('❌ Error details:', error.stack);
+    res.status(400).json({ message: error.message, error: error.toString() });
   }
 });
 
@@ -142,17 +181,58 @@ router.put('/:userId/projects', protect, async (req, res) => {
     console.log('🔗 Updating projects for user:', req.params.userId);
     const { projectIds } = req.body;
     
+    console.log('📦 Project IDs to save:', projectIds);
+    
     const resume = await Resume.findOneAndUpdate(
       { userId: req.params.userId },
       { selectedProjects: projectIds },
       { new: true, upsert: true }
-    ).populate('selectedProjects');
+    ).populate({
+      path: 'selectedProjects',
+      select: 'name description status technologies links createdAt'
+    });
     
     console.log('✅ Projects updated');
+    console.log('📦 Populated Projects:', resume.selectedProjects);
     res.json(resume);
   } catch (error) {
     console.error('❌ Error updating projects:', error);
     res.status(400).json({ message: error.message });
+  }
+});
+
+// 🧪 TEST ENDPOINT - Verify project population works
+router.get('/:userId/test-projects', protect, async (req, res) => {
+  try {
+    const resume = await Resume.findOne({ userId: req.params.userId });
+    
+    if (!resume) {
+      return res.status(404).json({ message: 'Resume not found' });
+    }
+    
+    console.log('🧪 Testing project population...');
+    console.log('📦 Raw Project IDs:', resume.selectedProjects);
+    
+    // Check if these projects actually exist
+    const projects = await Project.find({ _id: { $in: resume.selectedProjects } });
+    console.log('📦 Found Projects in DB:', projects.length);
+    console.log('📦 Project Details:', projects.map(p => ({ id: p._id, name: p.name })));
+    
+    // Now test population
+    const populatedResume = await Resume.findOne({ userId: req.params.userId })
+      .populate('selectedProjects');
+    
+    console.log('📦 Populated Count:', populatedResume.selectedProjects.length);
+    
+    res.json({
+      rawProjectIds: resume.selectedProjects,
+      projectsFoundInDB: projects.length,
+      projectDetails: projects.map(p => ({ id: p._id, name: p.name })),
+      populatedProjects: populatedResume.selectedProjects
+    });
+  } catch (error) {
+    console.error('❌ Test error:', error);
+    res.status(500).json({ message: error.message, stack: error.stack });
   }
 });
 

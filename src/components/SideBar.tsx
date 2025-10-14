@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
-  Briefcase,
-  Users,
+  Briefcase, 
   Headphones,
   PenTool,
   BarChart2,
@@ -18,7 +17,6 @@ const Sidebar = () => {
   const menu = [
     { title: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, path: "/dashboard" },
     { title: "Jobs", icon: <Briefcase className="w-5 h-5" />, path: "/job" },
-    { title: "Candidates", icon: <Users className="w-5 h-5" />, path: "/candidates" },
     { title: "Support", icon: <Headphones className="w-5 h-5" />, path: "/support" },
   ];
 

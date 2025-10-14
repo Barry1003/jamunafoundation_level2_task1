@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 
 interface Job {
@@ -20,25 +20,42 @@ interface SearchParams {
 }
 
 const JobSearch: React.FC = () => {
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<Job[]>(() => {
+    // ✅ Initialize from localStorage
+    const cached = localStorage.getItem('jobSearchResults');
+    return cached ? JSON.parse(cached) : [];
+  });
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState<SearchParams>({
-    what: "software engineer",
-    where: "Lagos",
+  
+  const [search, setSearch] = useState<SearchParams>(() => {
+    // ✅ Initialize search from localStorage
+    const cached = localStorage.getItem('jobSearchParams');
+    return cached ? JSON.parse(cached) : { what: "software engineer", where: "Lagos" };
   });
-  const [page, setPage] = useState(1);
+  
+  const [page, setPage] = useState(() => {
+    // ✅ Initialize page from localStorage
+    const cached = localStorage.getItem('jobSearchPage');
+    return cached ? parseInt(cached) : 1;
+  });
+  
   const [totalResults, setTotalResults] = useState(0);
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
   const [savingJob, setSavingJob] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(() => {
+    // ✅ Track if user has searched before
+    return localStorage.getItem('jobSearchResults') !== null;
+  });
 
-  const fetchJobs = async (newPage = page) => {
+  const fetchJobs = async (newPage = page, searchParams = search) => {
     setLoading(true);
     setError(null);
 
     try {
       const query = new URLSearchParams({
-        ...search,
+        ...searchParams,
         page: newPage.toString(),
       }).toString();
 
@@ -48,8 +65,16 @@ const JobSearch: React.FC = () => {
       
       const data = await response.json();
       
-      setJobs(data.data || []);
-      setTotalResults(data.data?.length || 0);
+      const jobsData = data.data || [];
+      setJobs(jobsData);
+      setTotalResults(jobsData.length);
+      setHasSearched(true);
+      
+      // ✅ Cache results in localStorage
+      localStorage.setItem('jobSearchResults', JSON.stringify(jobsData));
+      localStorage.setItem('jobSearchParams', JSON.stringify(searchParams));
+      localStorage.setItem('jobSearchPage', newPage.toString());
+      
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -76,8 +101,6 @@ const JobSearch: React.FC = () => {
           link: job.job_apply_link,
           status: 'applied',
           notes: `Location: ${job.job_city ? `${job.job_city}, ${job.job_state}` : 'Not specified'}\nEmployment Type: ${job.job_employment_type || 'Not specified'}`,
-          // You'll need to pass the project ID based on your auth system
-          // project: 'YOUR_PROJECT_ID'
         })
       });
 
@@ -95,19 +118,26 @@ const JobSearch: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchJobs(1);
-  }, []);
+  // ✅ REMOVED: Empty useEffect that was causing re-fetch
+  // Jobs are now loaded from localStorage on mount
+  // Only fetch when user clicks Search button
+
+  const handleSearch = () => {
+    setPage(1);
+    fetchJobs(1, search);
+  };
 
   const handleNext = () => {
-    setPage((prev) => prev + 1);
-    fetchJobs(page + 1);
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchJobs(nextPage, search);
   };
 
   const handlePrev = () => {
     if (page > 1) {
-      setPage((prev) => prev - 1);
-      fetchJobs(page - 1);
+      const prevPage = page - 1;
+      setPage(prevPage);
+      fetchJobs(prevPage, search);
     }
   };
 
@@ -118,7 +148,7 @@ const JobSearch: React.FC = () => {
       </h1>
       
       <p className="text-center text-sm text-gray-600">
-        {totalResults > 0 ? `${totalResults} results` : "No results yet"}
+        {totalResults > 0 ? `${totalResults} results` : hasSearched ? "No results found" : "Enter search criteria and click Search"}
       </p>
 
       {/* Search Controls */}
@@ -128,6 +158,7 @@ const JobSearch: React.FC = () => {
           placeholder="Job title (e.g. Software Engineer)"
           value={search.what}
           onChange={(e) => setSearch({ ...search, what: e.target.value })}
+          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
           className="border border-gray-300 rounded-lg p-2 w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <input
@@ -135,16 +166,15 @@ const JobSearch: React.FC = () => {
           placeholder="Location (e.g. Lagos)"
           value={search.where}
           onChange={(e) => setSearch({ ...search, where: e.target.value })}
+          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
           className="border border-gray-300 rounded-lg p-2 w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <button
-          onClick={() => {
-            setPage(1);
-            fetchJobs(1);
-          }}
-          className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition"
+          onClick={handleSearch}
+          disabled={loading}
+          className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Search
+          {loading ? 'Searching...' : 'Search'}
         </button>
       </div>
 
@@ -217,7 +247,18 @@ const JobSearch: React.FC = () => {
             </div>
           ))
         ) : (
-          !loading && <p className="text-center text-gray-500 col-span-full">No jobs found.</p>
+          !loading && hasSearched && (
+            <p className="text-center text-gray-500 col-span-full">
+              No jobs found. Try different search terms.
+            </p>
+          )
+        )}
+        
+        {!hasSearched && !loading && (
+          <div className="col-span-full text-center py-12">
+            <p className="text-gray-500 mb-2">Ready to find your next opportunity?</p>
+            <p className="text-sm text-gray-400">Enter your job title and location above, then click Search</p>
+          </div>
         )}
       </div>
 
@@ -227,7 +268,7 @@ const JobSearch: React.FC = () => {
           <button
             onClick={handlePrev}
             disabled={page === 1 || loading}
-            className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+            className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Prev
           </button>
@@ -235,7 +276,7 @@ const JobSearch: React.FC = () => {
           <button
             onClick={handleNext}
             disabled={loading}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next
           </button>

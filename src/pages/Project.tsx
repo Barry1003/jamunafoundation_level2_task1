@@ -171,7 +171,7 @@ const ProjectTracker: React.FC = () => {
     
     console.log("📦 Fetching GitHub repositories...");
     try {
-      const response = await authFetch(`${BASE_URL}/api/github/repos`);
+      const response = await authFetch(`${BASE_URL}/api/auth/github/repos`);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -200,6 +200,7 @@ const ProjectTracker: React.FC = () => {
     setError(null);
     
     try {
+      // ✅ FIXED: Changed from /api/auth/projects to /api/projects
       const response = await authFetch(`${BASE_URL}/api/projects`);
       
       if (!response.ok) {
@@ -344,7 +345,8 @@ const ProjectTracker: React.FC = () => {
     setError(null);
     
     try {
-      const response = await authFetch(`${BASE_URL}/api/github/disconnect`, {
+      // ✅ FIXED: Changed from /api/github/disconnect to /api/auth/github/disconnect
+      const response = await authFetch(`${BASE_URL}/api/auth/github/disconnect`, {
         method: 'POST',
         body: JSON.stringify({})
       });
@@ -369,7 +371,8 @@ const ProjectTracker: React.FC = () => {
   // --- UI HELPERS ---
 
   const connectGitHub = () => {
-    window.location.href = `${BASE_URL}/api/github/auth?token=${token}`;
+    // ✅ FIXED: Changed from /api/github/auth to /api/auth/github/auth
+    window.location.href = `${BASE_URL}/api/auth/github/auth?token=${token}`;
   };
 
   const getStatusColor = (status: Project['status']) => {
@@ -403,7 +406,6 @@ const ProjectTracker: React.FC = () => {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gray-50 p-6 font-sans">
       <div className="max-w-7xl mx-auto">

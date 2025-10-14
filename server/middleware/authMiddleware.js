@@ -1,5 +1,3 @@
-// middleware/authMiddleware.js
-
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
@@ -19,6 +17,11 @@ export const protect = async (req, res, next) => {
 
     if (!req.user) {
       return res.status(401).json({ error: "Not authorized, user not found" });
+    }
+
+    // ✅ Check if account is active
+    if (req.user.active === false) {
+      return res.status(401).json({ error: "Account is deactivated" });
     }
 
     next();

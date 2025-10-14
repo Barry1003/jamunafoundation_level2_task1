@@ -313,7 +313,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
       const formDataToSend = {
         ...form,
         experiences: form.experiences.map((exp: Experience) => {
-          const { _id, ...expWithoutId } = exp;
+          const {...expWithoutId } = exp;
           return expWithoutId;
         })
       };

@@ -1,5 +1,3 @@
-// routes/githubRoutes.js (FIXED)
-
 import express from "express";
 import passportProjects from "../config/passportProjects.js";
 import { protect } from "../middleware/authMiddleware.js";
@@ -8,6 +6,7 @@ import User from "../models/User.js";
 const router = express.Router();
 
 // Initiate GitHub OAuth (using Passport)
+// Accessible at: /api/auth/github/auth
 router.get("/auth", (req, res, next) => {
   const { token } = req.query;
   
@@ -19,15 +18,15 @@ router.get("/auth", (req, res, next) => {
   req.session.mainAuthToken = token;
   
   // Use Passport to authenticate
-  // Make sure callbackURL points to YOUR BACKEND, not frontend
   passportProjects.authenticate("github-projects", { 
     scope: ["repo", "user:email"],
     session: false,
-    callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/github/callback`
+    callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/github/callback`
   })(req, res, next);
 });
 
 // GitHub OAuth callback (using Passport)
+// Accessible at: /api/auth/github/callback
 router.get("/callback", 
   passportProjects.authenticate("github-projects", { 
     failureRedirect: `${process.env.FRONTEND_URL}/projects?github_error=authentication_failed`,
@@ -55,6 +54,8 @@ router.get("/callback",
         githubProjectEmail: githubData.email,
       });
       
+      console.log("✅ GitHub account connected for user:", decoded.id);
+      
       // Redirect to frontend with success data
       const responseData = {
         username: githubData.username,
@@ -66,26 +67,28 @@ router.get("/callback",
       
       const dataParam = encodeURIComponent(JSON.stringify(responseData));
       
-      // ✅ FIXED: Redirect to /projects (not /projects/github/callback)
       res.redirect(`${process.env.FRONTEND_URL}/projects?github_connected=true&github_data=${dataParam}`);
       
     } catch (err) {
-      console.error("GitHub callback error:", err);
-      res.redirect(`${process.env.FRONTEND_URL}/projects?github_error=${err.message}`);
+      console.error("❌ GitHub callback error:", err);
+      res.redirect(`${process.env.FRONTEND_URL}/projects?github_error=${encodeURIComponent(err.message)}`);
     }
   }
 );
 
 // Get repositories (protected)
+// Accessible at: /api/auth/github/repos
 router.get("/repos", protect, async (req, res) => {
   try {
     const user = req.user;
     
     if (!user.githubProjectToken) {
       return res.status(400).json({ 
-        error: "GitHub not connected" 
+        error: "GitHub not connected. Please connect your GitHub account first." 
       });
     }
+    
+    console.log("📦 Fetching repositories for user:", user._id);
     
     const response = await fetch(
       "https://api.github.com/user/repos?per_page=100&sort=updated",
@@ -98,7 +101,9 @@ router.get("/repos", protect, async (req, res) => {
     );
     
     if (!response.ok) {
-      throw new Error('Failed to fetch repos from GitHub');
+      const errorData = await response.json();
+      console.error("❌ GitHub API error:", errorData);
+      throw new Error('Failed to fetch repos from GitHub API');
     }
     
     const repos = await response.json();
@@ -117,14 +122,16 @@ router.get("/repos", protect, async (req, res) => {
       defaultBranch: repo.default_branch,
     }));
     
+    console.log(`✅ Fetched ${formattedRepos.length} repositories`);
     res.json(formattedRepos);
   } catch (err) {
-    console.error("Error fetching repositories:", err);
-    res.status(500).json({ error: "Failed to fetch repositories" });
+    console.error("❌ Error fetching repositories:", err);
+    res.status(500).json({ error: err.message || "Failed to fetch repositories" });
   }
 });
 
 // Disconnect GitHub (protected)
+// Accessible at: /api/auth/github/disconnect
 router.post("/disconnect", protect, async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.user._id, {
@@ -135,9 +142,10 @@ router.post("/disconnect", protect, async (req, res) => {
       githubProjectEmail: null,
     });
     
+    console.log("✅ GitHub disconnected for user:", req.user._id);
     res.json({ message: "GitHub disconnected successfully" });
   } catch (err) {
-    console.error("Error disconnecting GitHub:", err);
+    console.error("❌ Error disconnecting GitHub:", err);
     res.status(500).json({ error: "Failed to disconnect GitHub" });
   }
 });

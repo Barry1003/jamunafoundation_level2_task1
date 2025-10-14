@@ -1,5 +1,3 @@
-// models/User.js
-
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
@@ -54,7 +52,16 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
-    // 🆕 GitHub Project Integration fields (separate from login)
+    // ✅ ADD THESE NEW FIELDS FOR ACCOUNT MANAGEMENT
+    active: {
+      type: Boolean,
+      default: true
+    },
+    deactivatedAt: {
+      type: Date,
+      default: null
+    },
+    // GitHub Project Integration fields (separate from login)
     githubProjectToken: {
       type: String,
       default: null,

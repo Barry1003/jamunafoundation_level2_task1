@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Download, Mail, Phone, MapPin, Globe, Linkedin, Twitter, Facebook, Loader } from 'lucide-react';
+import { Download, Mail, Phone, MapPin, Globe, Linkedin, Twitter, Facebook, Loader, Github } from 'lucide-react';
 
 interface UserType {
   _id: string;
@@ -23,11 +23,11 @@ interface ResumeData {
     twitter: string;
     linkedin: string;
     instagram: string;
-    github: string; // added github
+    github: string;
   };
   skills: string[];
   experiences: Array<{
-    _id: string;
+    _id?: string;
     title: string;
     company: string;
     startDate: string;
@@ -60,11 +60,21 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
   const getToken = () => localStorage.getItem('token');
 
   useEffect(() => {
+    console.log('🔍 AboutTab useEffect triggered');
+    console.log('👤 User prop:', user);
+    
     async function fetchResume() {
-      if (!user) return;
+      if (!user) {
+        console.log('⚠️ No user found, skipping fetch');
+        setLoading(false);
+        return;
+      }
 
       const token = getToken();
+      console.log('🔑 Token exists:', !!token);
+      
       if (!token) {
+        console.log('❌ No token found');
         setError('Not authenticated');
         setLoading(false);
         return;
@@ -72,6 +82,9 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
 
       try {
         setLoading(true);
+        console.log('📋 Fetching resume for user:', user._id);
+        console.log('🌐 API URL:', `${API_BASE_URL}/resume/${user._id}`);
+        
         const response = await fetch(`${API_BASE_URL}/resume/${user._id}`, {
           headers: {
             'Content-Type': 'application/json',
@@ -79,15 +92,30 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
           },
         });
 
+        console.log('📡 Response status:', response.status);
+        console.log('📡 Response ok:', response.ok);
+
         if (response.ok) {
           const data = await response.json();
+          console.log('✅ Resume data received:', data);
+          console.log('📦 Selected Projects:', data.selectedProjects);
+          console.log('📊 Data structure:', {
+            hasFullName: !!data.fullName,
+            hasJobTitle: !!data.jobTitle,
+            hasAboutMe: !!data.aboutMe,
+            skillsCount: data.skills?.length || 0,
+            experiencesCount: data.experiences?.length || 0,
+            projectsCount: data.selectedProjects?.length || 0
+          });
           setResumeData(data);
           setError('');
         } else {
-          setError('Failed to load resume');
+          const errorData = await response.json();
+          console.log('❌ Error response:', errorData);
+          setError(errorData.message || 'Failed to load resume');
         }
       } catch (err) {
-        console.error('Error fetching resume:', err);
+        console.error('❌ Error fetching resume:', err);
         setError('Error loading resume data');
       } finally {
         setLoading(false);
@@ -106,7 +134,7 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
       const opt = {
         margin: 0.5,
         filename: `${resumeData?.fullName || 'resume'}_resume.pdf`,
-        image: { type: 'jpeg' as 'jpeg', quality: 0.98 }, // type assertion
+        image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, logging: false },
         jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
       };
@@ -114,7 +142,7 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
       html2pdf().set(opt).from(resumeRef.current).save();
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Please install html2pdf.js: npm install html2pdf.js');
+      alert('Error generating PDF. Please make sure html2pdf.js is installed.');
     }
   };
 
@@ -155,7 +183,22 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
   if (!resumeData) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600">No resume data found. Please update your settings.</p>
+        <p className="text-gray-600 mb-4">No resume data found.</p>
+        <p className="text-sm text-gray-500">Go to Settings to create your resume.</p>
+      </div>
+    );
+  }
+
+  const hasContent = resumeData.aboutMe || 
+                     resumeData.skills?.length > 0 || 
+                     resumeData.experiences?.length > 0 || 
+                     resumeData.selectedProjects?.length > 0;
+
+  if (!hasContent) {
+    return (
+      <div className="text-center py-12 bg-gray-50 rounded-lg">
+        <p className="text-gray-600 mb-4">Your resume is empty.</p>
+        <p className="text-sm text-gray-500">Go to Settings to add your information, skills, experience, and projects.</p>
       </div>
     );
   }
@@ -185,9 +228,11 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
             <h1 className="text-4xl font-bold text-gray-900 mb-2">
               {resumeData.fullName || user?.fullName || 'Your Name'}
             </h1>
-            <h2 className="text-xl text-blue-600 font-medium mb-4">
-              {resumeData.jobTitle || 'Professional Title'}
-            </h2>
+            {resumeData.jobTitle && (
+              <h2 className="text-xl text-blue-600 font-medium mb-4">
+                {resumeData.jobTitle}
+              </h2>
+            )}
 
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600">
               {user?.email && (
@@ -210,54 +255,72 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
               )}
             </div>
 
-            <div className="flex flex-wrap gap-4 mt-3">
-              {resumeData.socialLinks.linkedin && (
-                <a
-                  href={resumeData.socialLinks.linkedin}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
-                >
-                  <Linkedin className="w-4 h-4" />
-                  LinkedIn
-                </a>
-              )}
-              {resumeData.socialLinks.github && (
-                <a
-                  href={resumeData.socialLinks.github}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
-                >
-                  GitHub
-                </a>
-              )}
-              {resumeData.socialLinks.twitter && (
-                <a
-                  href={resumeData.socialLinks.twitter}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
-                >
-                  <Twitter className="w-4 h-4" />
-                  Twitter
-                </a>
-              )}
-              {resumeData.socialLinks.facebook && (
-                <a
-                  href={resumeData.socialLinks.facebook}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
-                >
-                  <Facebook className="w-4 h-4" />
-                  Facebook
-                </a>
-              )}
-            </div>
+            {/* Social Links */}
+            {(resumeData.socialLinks.linkedin || 
+              resumeData.socialLinks.github || 
+              resumeData.socialLinks.twitter || 
+              resumeData.socialLinks.facebook || 
+              resumeData.socialLinks.instagram) && (
+              <div className="flex flex-wrap gap-4 mt-3">
+                {resumeData.socialLinks.linkedin && (
+                  <a
+                    href={resumeData.socialLinks.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                  >
+                    <Linkedin className="w-4 h-4" />
+                    LinkedIn
+                  </a>
+                )}
+                {resumeData.socialLinks.github && (
+                  <a
+                    href={resumeData.socialLinks.github}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                  >
+                    <Github className="w-4 h-4" />
+                    GitHub
+                  </a>
+                )}
+                {resumeData.socialLinks.twitter && (
+                  <a
+                    href={resumeData.socialLinks.twitter}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                  >
+                    <Twitter className="w-4 h-4" />
+                    Twitter
+                  </a>
+                )}
+                {resumeData.socialLinks.facebook && (
+                  <a
+                    href={resumeData.socialLinks.facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                  >
+                    <Facebook className="w-4 h-4" />
+                    Facebook
+                  </a>
+                )}
+                {resumeData.socialLinks.instagram && (
+                  <a
+                    href={resumeData.socialLinks.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                  >
+                    Instagram
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* About, Skills, Experience, Projects, Footer */}
+          {/* Professional Summary */}
           {resumeData.aboutMe && (
             <section className="mb-8">
               <h3 className="text-xl font-bold text-gray-900 mb-3 border-b-2 border-gray-300 pb-2">
@@ -267,12 +330,18 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
             </section>
           )}
 
+          {/* Skills */}
           {resumeData.skills?.length > 0 && (
             <section className="mb-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-3 border-b-2 border-gray-300 pb-2">SKILLS</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3 border-b-2 border-gray-300 pb-2">
+                SKILLS
+              </h3>
               <div className="flex flex-wrap gap-2">
                 {resumeData.skills.map((skill, index) => (
-                  <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                  <span 
+                    key={index} 
+                    className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium"
+                  >
                     {skill}
                   </span>
                 ))}
@@ -280,12 +349,15 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
             </section>
           )}
 
+          {/* Work Experience */}
           {resumeData.experiences?.length > 0 && (
             <section className="mb-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 border-b-2 border-gray-300 pb-2">WORK EXPERIENCE</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 border-b-2 border-gray-300 pb-2">
+                WORK EXPERIENCE
+              </h3>
               <div className="space-y-6">
-                {resumeData.experiences.map((exp) => (
-                  <div key={exp._id} className="relative pl-6 border-l-2 border-blue-600">
+                {resumeData.experiences.map((exp, index) => (
+                  <div key={exp._id || index} className="relative pl-6 border-l-2 border-blue-600">
                     <div className="absolute w-3 h-3 bg-blue-600 rounded-full -left-[7px] top-1" />
                     <div>
                       <h4 className="text-lg font-semibold text-gray-900">{exp.title}</h4>
@@ -294,7 +366,9 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
                         {formatDate(exp.startDate)} - {exp.current ? 'Present' : formatDate(exp.endDate)}
                       </p>
                       {exp.description && (
-                        <p className="text-gray-700 leading-relaxed text-sm">{exp.description}</p>
+                        <p className="text-gray-700 leading-relaxed text-sm whitespace-pre-line">
+                          {exp.description}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -303,9 +377,12 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
             </section>
           )}
 
+          {/* Featured Projects */}
           {resumeData.selectedProjects?.length > 0 && (
             <section className="mb-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 border-b-2 border-gray-300 pb-2">FEATURED PROJECTS</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 border-b-2 border-gray-300 pb-2">
+                FEATURED PROJECTS
+              </h3>
               <div className="space-y-4">
                 {resumeData.selectedProjects.map((project) => (
                   <div key={project._id} className="border-l-4 border-blue-600 pl-4">
@@ -347,6 +424,7 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
             </section>
           )}
 
+          {/* Footer */}
           <div className="text-center text-xs text-gray-500 mt-12 pt-6 border-t">
             Generated on {new Date().toLocaleDateString()}
           </div>

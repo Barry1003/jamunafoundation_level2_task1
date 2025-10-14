@@ -1,27 +1,77 @@
-import React, { useState } from 'react';
-import { User, Lock, Bell, Briefcase, Shield, Palette, UserX, Camera, X, Check, Mail, Phone, Building2, FileText, Clock, Calendar,Monitor, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  User, Lock, Bell, Briefcase, Shield, Palette, UserX, Camera, X, Check, 
+  Mail, Clock, Monitor, Download, Loader 
+} from 'lucide-react';
 
 type TabType = 'profile' | 'security' | 'notifications' | 'work' | 'privacy' | 'appearance' | 'account';
 
 interface ToastMessage {
   show: boolean;
   message: string;
+  type: 'success' | 'error';
 }
 
-const SettingsPage = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('profile');
-  const [toast, setToast] = useState<ToastMessage>({ show: false, message: '' });
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+interface UserType {
+  _id: string;
+  fullName: string;
+  email?: string;
+  username: string;
+  avatar?: string;
+  authProvider: "local" | "github";
+}
 
-  // Profile state
+const SettingsPage: React.FC = () => {  // ✅ Remove user prop, fetch internally
+  const [activeTab, setActiveTab] = useState<TabType>('profile');
+  const [toast, setToast] = useState<ToastMessage>({ show: false, message: '', type: 'success' });
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<UserType | null>(null);  // ✅ Add user state
+  const [userLoading, setUserLoading] = useState(true);  // ✅ Add loading state
+
+  // ✅ Fetch user data on component mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        console.log('❌ No token found');
+        setUserLoading(false);
+        return;
+      }
+
+      try {
+        console.log('🔍 Fetching user from /api/auth/me');
+        const response = await fetch('http://localhost:5000/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          console.log('✅ User data fetched:', userData);
+          setUser(userData);
+        } else {
+          console.error('❌ Failed to fetch user');
+          localStorage.removeItem('token');
+        }
+      } catch (error) {
+        console.error('❌ Error fetching user:', error);
+      } finally {
+        setUserLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  // Profile state - initialized with user data
   const [profile, setProfile] = useState({
-    fullName: 'John Doe',
-    jobTitle: 'Senior Project Manager',
-    department: 'Operations',
-    email: 'john.doe@company.com',
-    phone: '+1 (555) 123-4567',
-    bio: 'Experienced project manager with 10+ years in tech industry.',
-    skills: ['Project Management', 'Agile', 'Scrum', 'Leadership']
+    fullName: '',
+    email: '',
+    username: '',
+    avatar: null as string | null
   });
 
   // Security state
@@ -32,53 +82,89 @@ const SettingsPage = () => {
     twoFactorEnabled: false
   });
 
-  // Notifications state
-  const [notifications, setNotifications] = useState({
-    emailNewAssignments: true,
-    emailDeadlines: true,
-    emailUpdates: true,
-    emailMentions: true,
-    emailStatusChanges: false,
-    inAppNotifications: true,
-    notificationFrequency: 'realtime'
+  // Notifications state - load from localStorage or defaults
+  const [notifications, setNotifications] = useState(() => {
+    const saved = localStorage.getItem('notificationSettings');
+    return saved ? JSON.parse(saved) : {
+      emailNewAssignments: true,
+      emailDeadlines: true,
+      emailUpdates: true,
+      emailMentions: true,
+      emailStatusChanges: false,
+      inAppNotifications: true,
+      notificationFrequency: 'realtime'
+    };
   });
 
-  // Work preferences state
-  const [workPrefs, setWorkPrefs] = useState({
-    defaultView: 'board',
-    timezone: 'America/New_York',
-    weekStart: 'monday',
-    dateFormat: 'MM/DD/YYYY',
-    timeFormat: '12hr'
+  // Work preferences state - load from localStorage
+  const [workPrefs, setWorkPrefs] = useState(() => {
+    const saved = localStorage.getItem('workPreferences');
+    return saved ? JSON.parse(saved) : {
+      defaultView: 'board',
+      timezone: 'America/New_York',
+      weekStart: 'monday',
+      dateFormat: 'MM/DD/YYYY',
+      timeFormat: '12hr'
+    };
   });
 
-  // Privacy state
-  const [privacy, setPrivacy] = useState({
-    profileVisibility: 'team',
-    showOnlineStatus: true,
-    shareWorkHours: true
+  // Privacy state - load from localStorage
+  const [privacy, setPrivacy] = useState(() => {
+    const saved = localStorage.getItem('privacySettings');
+    return saved ? JSON.parse(saved) : {
+      profileVisibility: 'team',
+      showOnlineStatus: true,
+      shareWorkHours: true
+    };
   });
 
-  // Appearance state
-  const [appearance, setAppearance] = useState({
-    theme: 'light',
-    viewDensity: 'comfortable'
+  // Appearance state - load from localStorage
+  const [appearance, setAppearance] = useState(() => {
+    const saved = localStorage.getItem('appearanceSettings');
+    return saved ? JSON.parse(saved) : {
+      theme: 'light',
+      viewDensity: 'comfortable'
+    };
   });
 
-  const showToast = (message: string) => {
-    setToast({ show: true, message });
-    setTimeout(() => setToast({ show: false, message: '' }), 3000);
+  // Update profile when user data is loaded
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        fullName: user.fullName || '',
+        email: user.email || '',
+        username: user.username || '',
+        avatar: user.avatar || null
+      });
+    }
+  }, [user]);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showToast('Please upload an image file', 'error');
+      return;
     }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image size must be less than 5MB', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfile({ ...profile, avatar: reader.result as string });
+    };
+    reader.readAsDataURL(file);
   };
 
   const validateProfile = () => {
@@ -92,49 +178,197 @@ const SettingsPage = () => {
   const validateSecurity = () => {
     if (!security.currentPassword) return 'Current password is required';
     if (!security.newPassword) return 'New password is required';
-    if (security.newPassword.length < 8) return 'Password must be at least 8 characters';
+    if (security.newPassword.length < 6) return 'Password must be at least 6 characters';
     if (security.newPassword !== security.confirmPassword) return 'Passwords do not match';
     return null;
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     const error = validateProfile();
     if (error) {
-      showToast(error);
+      showToast(error, 'error');
       return;
     }
-    showToast('Profile updated successfully!');
+
+    if (!user) {
+      showToast('No user found', 'error');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/users/${user._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          fullName: profile.fullName,
+          email: profile.email,
+          avatar: profile.avatar
+        })
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        setUser(updatedUser);
+        showToast('Profile updated successfully!');
+        // Update localStorage
+        localStorage.setItem('activeUser', JSON.stringify(updatedUser));
+      } else {
+        const errorData = await response.json();
+        showToast(errorData.message || 'Failed to update profile', 'error');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      showToast('Error updating profile', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSaveSecurity = () => {
+  const handleSaveSecurity = async () => {
     const error = validateSecurity();
     if (error) {
-      showToast(error);
+      showToast(error, 'error');
       return;
     }
-    showToast('Password changed successfully!');
-    setSecurity({ currentPassword: '', newPassword: '', confirmPassword: '', twoFactorEnabled: security.twoFactorEnabled });
+
+    if (!user || user.authProvider !== 'local') {
+      showToast('Password change is only available for local accounts', 'error');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/auth/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          currentPassword: security.currentPassword,
+          newPassword: security.newPassword
+        })
+      });
+
+      if (response.ok) {
+        showToast('Password changed successfully!');
+        setSecurity({ 
+          currentPassword: '', 
+          newPassword: '', 
+          confirmPassword: '', 
+          twoFactorEnabled: security.twoFactorEnabled 
+        });
+      } else {
+        const errorData = await response.json();
+        showToast(errorData.message || 'Failed to change password', 'error');
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      showToast('Error changing password', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSaveNotifications = () => {
+    localStorage.setItem('notificationSettings', JSON.stringify(notifications));
     showToast('Notification preferences saved!');
   };
 
   const handleSaveWorkPrefs = () => {
+    localStorage.setItem('workPreferences', JSON.stringify(workPrefs));
     showToast('Work preferences saved!');
   };
 
+  const handleSavePrivacy = () => {
+    localStorage.setItem('privacySettings', JSON.stringify(privacy));
+    showToast('Privacy settings saved!');
+  };
+
   const handleSaveAppearance = () => {
+    localStorage.setItem('appearanceSettings', JSON.stringify(appearance));
+    
+    // Apply theme
+    if (appearance.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    
     showToast('Appearance settings saved!');
   };
 
-  const handleExportData = () => {
-    showToast('Data export initiated! You will receive an email shortly.');
+  const handleExportData = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/users/${user._id}/export`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `employx-data-${Date.now()}.json`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        showToast('Data exported successfully!');
+      } else {
+        showToast('Failed to export data', 'error');
+      }
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      showToast('Error exporting data', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeactivateAccount = () => {
-    if (window.confirm('Are you sure you want to deactivate your account?')) {
-      showToast('Account deactivation initiated.');
+  const handleDeactivateAccount = async () => {
+    if (!window.confirm('Are you sure you want to deactivate your account? You can reactivate it by logging back in.')) {
+      return;
+    }
+
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/users/${user._id}/deactivate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        showToast('Account deactivated successfully');
+        // Logout and redirect
+        setTimeout(() => {
+          localStorage.clear();
+          window.location.href = '/login';
+        }, 2000);
+      } else {
+        showToast('Failed to deactivate account', 'error');
+      }
+    } catch (error) {
+      console.error('Error deactivating account:', error);
+      showToast('Error deactivating account', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -148,6 +382,30 @@ const SettingsPage = () => {
     { id: 'account' as TabType, label: 'Account', icon: UserX }
   ];
 
+  // ✅ Show loading while fetching user
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ Show error if no user
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Please log in to access settings.</p>
+          <a href="/login" className="text-blue-600 hover:underline">Go to Login</a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <style>{`
@@ -159,6 +417,7 @@ const SettingsPage = () => {
           animation: fadeIn 0.3s ease-out;
         }
       `}</style>
+      
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Settings</h1>
 
@@ -186,8 +445,8 @@ const SettingsPage = () => {
             </nav>
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1 bg-white rounded-lg shadow-sm p-8 transition-all duration-300">
+          {/* Main Content - Keep all your existing tab content here */}
+          <div className="flex-1 bg-white rounded-lg shadow-sm p-8">
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div className="animate-fadeIn">
@@ -198,23 +457,25 @@ const SettingsPage = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-3">Profile Photo</label>
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      {profileImage ? (
-                        <img src={profileImage} alt="Profile" className="w-24 h-24 rounded-full object-cover" />
+                      {profile.avatar ? (
+                        <img src={profile.avatar} alt="Profile" className="w-24 h-24 rounded-full object-cover border-2 border-gray-200" />
                       ) : (
-                        <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center">
-                          <User className="w-12 h-12 text-gray-400" />
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                          <span className="text-3xl font-bold text-white">
+                            {profile.fullName[0]?.toUpperCase() || 'U'}
+                          </span>
                         </div>
                       )}
-                      {profileImage && (
+                      {profile.avatar && (
                         <button
-                          onClick={() => setProfileImage(null)}
+                          onClick={() => setProfile({ ...profile, avatar: null })}
                           className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                         >
                           <X className="w-4 h-4" />
                         </button>
                       )}
                     </div>
-                    <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                    <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors">
                       <Camera className="w-4 h-4" />
                       Upload Photo
                       <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
@@ -223,199 +484,154 @@ const SettingsPage = () => {
                 </div>
 
                 <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Full Name <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="text"
-                          value={profile.fullName}
-                          onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Job Title</label>
-                      <div className="relative">
-                        <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="text"
-                          value={profile.jobTitle}
-                          onChange={(e) => setProfile({ ...profile, jobTitle: e.target.value })}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Full Name <span className="text-red-500">*</span>
+                    </label>
                     <div className="relative">
-                      <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="text"
-                        value={profile.department}
-                        onChange={(e) => setProfile({ ...profile, department: e.target.value })}
+                        value={profile.fullName}
+                        onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Email <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="email"
-                          value={profile.email}
-                          onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="tel"
-                          value={profile.phone}
-                          onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Username
+                    </label>
                     <div className="relative">
-                      <FileText className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                      <textarea
-                        value={profile.bio}
-                        onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                        rows={4}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={profile.username}
+                        disabled
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
                       />
                     </div>
+                    <p className="text-xs text-gray-500 mt-1">Username cannot be changed</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Skills</label>
-                    <div className="flex flex-wrap gap-2">
-                      {profile.skills.map((skill, index) => (
-                        <span key={index} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                          {skill}
-                        </span>
-                      ))}
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="email"
+                        value={profile.email}
+                        onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                        disabled={user.authProvider === 'github'}
+                        className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          user.authProvider === 'github' ? 'bg-gray-50 cursor-not-allowed' : ''
+                        }`}
+                      />
                     </div>
+                    {user.authProvider === 'github' && (
+                      <p className="text-xs text-gray-500 mt-1">Email from GitHub account cannot be changed</p>
+                    )}
+                  </div>
+
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <p className="text-sm text-blue-800">
+                      <strong>Account Type:</strong> {user.authProvider === 'github' ? 'GitHub OAuth' : 'Local Account'}
+                    </p>
                   </div>
                 </div>
 
                 <button
                   onClick={handleSaveProfile}
-                  className="mt-8 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
+                  disabled={loading}
+                  className="mt-8 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Check className="w-5 h-5" />
-                  Save Changes
+                  {loading ? (
+                    <>
+                      <Loader className="w-5 h-5 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-5 h-5" />
+                      Save Changes
+                    </>
+                  )}
                 </button>
               </div>
             )}
-
             {/* Security Tab */}
             {activeTab === 'security' && (
               <div className="animate-fadeIn">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Password & Security</h2>
                 
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Current Password <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      value={security.currentPassword}
-                      onChange={(e) => setSecurity({ ...security, currentPassword: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                {user.authProvider === 'github' ? (
+                  <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <h3 className="font-semibold text-yellow-900 mb-2">GitHub Account</h3>
+                    <p className="text-sm text-yellow-800">
+                      You're signed in with GitHub. Password management is handled through your GitHub account settings.
+                    </p>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      New Password <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      value={security.newPassword}
-                      onChange={(e) => setSecurity({ ...security, newPassword: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <p className="text-sm text-gray-500 mt-1">Must be at least 8 characters</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Confirm New Password <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      value={security.confirmPassword}
-                      onChange={(e) => setSecurity({ ...security, confirmPassword: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div className="border-t pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-900">Two-Factor Authentication</h3>
-                        <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={security.twoFactorEnabled}
-                          onChange={(e) => setSecurity({ ...security, twoFactorEnabled: e.target.checked })}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                ) : (
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Current Password <span className="text-red-500">*</span>
                       </label>
+                      <input
+                        type="password"
+                        value={security.currentPassword}
+                        onChange={(e) => setSecurity({ ...security, currentPassword: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
                     </div>
-                  </div>
 
-                  <div className="border-t pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-900">Share Work Hours</h3>
-                        <p className="text-sm text-gray-500">Allow team members to see your working hours</p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={privacy.shareWorkHours}
-                          onChange={(e) => setPrivacy({ ...privacy, shareWorkHours: e.target.checked })}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        New Password <span className="text-red-500">*</span>
                       </label>
+                      <input
+                        type="password"
+                        value={security.newPassword}
+                        onChange={(e) => setSecurity({ ...security, newPassword: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      <p className="text-sm text-gray-500 mt-1">Must be at least 6 characters</p>
                     </div>
-                  </div>
-                </div>
 
-                <button
-                  onClick={handleSaveSecurity}
-                  className="mt-8 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
-                >
-                  <Check className="w-5 h-5" />
-                  Save Changes
-                </button>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Confirm New Password <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={security.confirmPassword}
+                        onChange={(e) => setSecurity({ ...security, confirmPassword: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleSaveSecurity}
+                      disabled={loading}
+                      className="mt-8 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors disabled:opacity-50"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader className="w-5 h-5 animate-spin" />
+                          Changing...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-5 h-5" />
+                          Change Password
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -429,11 +645,10 @@ const SettingsPage = () => {
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Email Notifications</h3>
                     <div className="space-y-4">
                       {[
-                        { key: 'emailNewAssignments', label: 'New project assignments', desc: 'Get notified when you are assigned to a new project' },
-                        { key: 'emailDeadlines', label: 'Task deadlines approaching', desc: 'Receive reminders before task deadlines' },
-                        { key: 'emailUpdates', label: 'Project updates and comments', desc: 'Stay informed about project changes and comments' },
-                        { key: 'emailMentions', label: 'Team mentions', desc: 'Get notified when someone mentions you' },
-                        { key: 'emailStatusChanges', label: 'Status changes', desc: 'Receive updates when project or task status changes' }
+                        { key: 'emailNewAssignments', label: 'New job applications', desc: 'Get notified about job opportunities' },
+                        { key: 'emailDeadlines', label: 'Application deadlines', desc: 'Receive reminders before deadlines' },
+                        { key: 'emailUpdates', label: 'Application updates', desc: 'Stay informed about application status changes' },
+                        { key: 'emailMentions', label: 'Messages and mentions', desc: 'Get notified when someone contacts you' },
                       ].map((item) => (
                         <div key={item.key} className="flex items-center justify-between">
                           <div>
@@ -451,24 +666,6 @@ const SettingsPage = () => {
                           </label>
                         </div>
                       ))}
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-900">In-App Notifications</h3>
-                        <p className="text-sm text-gray-500">Show notifications within the application</p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={notifications.inAppNotifications}
-                          onChange={(e) => setNotifications({ ...notifications, inAppNotifications: e.target.checked })}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
                     </div>
                   </div>
 
@@ -503,19 +700,6 @@ const SettingsPage = () => {
                 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Default Project View</label>
-                    <select
-                      value={workPrefs.defaultView}
-                      onChange={(e) => setWorkPrefs({ ...workPrefs, defaultView: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="list">List View</option>
-                      <option value="board">Board View</option>
-                      <option value="calendar">Calendar View</option>
-                    </select>
-                  </div>
-
-                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       <Clock className="inline w-4 h-4 mr-2" />
                       Timezone
@@ -530,23 +714,7 @@ const SettingsPage = () => {
                       <option value="America/Denver">Mountain Time (MT)</option>
                       <option value="America/Los_Angeles">Pacific Time (PT)</option>
                       <option value="Europe/London">London (GMT)</option>
-                      <option value="Europe/Paris">Paris (CET)</option>
                       <option value="Asia/Tokyo">Tokyo (JST)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <Calendar className="inline w-4 h-4 mr-2" />
-                      Week Start Day
-                    </label>
-                    <select
-                      value={workPrefs.weekStart}
-                      onChange={(e) => setWorkPrefs({ ...workPrefs, weekStart: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="monday">Monday</option>
-                      <option value="sunday">Sunday</option>
                     </select>
                   </div>
 
@@ -602,7 +770,7 @@ const SettingsPage = () => {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="public">Public - Anyone can see your profile</option>
-                      <option value="team">Team Only - Only team members can see your profile</option>
+                      <option value="team">Connections Only - Only your connections</option>
                       <option value="private">Private - Only you can see your profile</option>
                     </select>
                   </div>
@@ -624,28 +792,10 @@ const SettingsPage = () => {
                       </label>
                     </div>
                   </div>
-
-                  <div className="border-t pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-900">Share Work Hours</h3>
-                        <p className="text-sm text-gray-500">Allow team members to see your working hours</p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={privacy.shareWorkHours}
-                          onChange={(e) => setPrivacy({ ...privacy, shareWorkHours: e.target.checked })}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
-                    </div>
-                  </div>
                 </div>
 
                 <button
-                  onClick={() => showToast('Privacy settings saved!')}
+                  onClick={handleSavePrivacy}
                   className="mt-8 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
                 >
                   <Check className="w-5 h-5" />
@@ -695,38 +845,6 @@ const SettingsPage = () => {
                       ))}
                     </div>
                   </div>
-
-                  <div className="border-t pt-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-3">View Density</label>
-                    <div className="grid grid-cols-2 gap-4">
-                      {[
-                        { value: 'compact', label: 'Compact', desc: 'More content on screen' },
-                        { value: 'comfortable', label: 'Comfortable', desc: 'Balanced spacing' }
-                      ].map((density) => (
-                        <label
-                          key={density.value}
-                          className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${
-                            appearance.viewDensity === density.value
-                              ? 'border-blue-600 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="density"
-                            value={density.value}
-                            checked={appearance.viewDensity === density.value}
-                            onChange={(e) => setAppearance({ ...appearance, viewDensity: e.target.value })}
-                            className="sr-only"
-                          />
-                          <div className="text-center">
-                            <div className="font-medium text-gray-900">{density.label}</div>
-                            <div className="text-sm text-gray-500">{density.desc}</div>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
                 <button
@@ -751,13 +869,14 @@ const SettingsPage = () => {
                       <div className="flex-1">
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">Export Your Data</h3>
                         <p className="text-sm text-gray-600 mb-4">
-                          Download a copy of your account data, including your profile, projects, and tasks. You'll receive an email with a download link.
+                          Download a copy of your data including profile, resume, and projects.
                         </p>
                         <button
                           onClick={handleExportData}
-                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
+                          disabled={loading}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm disabled:opacity-50"
                         >
-                          Request Data Export
+                          {loading ? 'Exporting...' : 'Export Data'}
                         </button>
                       </div>
                     </div>
@@ -769,29 +888,15 @@ const SettingsPage = () => {
                       <div className="flex-1">
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">Deactivate Account</h3>
                         <p className="text-sm text-gray-600 mb-4">
-                          Temporarily deactivate your account. You can reactivate it anytime by logging back in. Your data will be preserved.
+                          Temporarily deactivate your account. You can reactivate by logging back in.
                         </p>
                         <button
                           onClick={handleDeactivateAccount}
-                          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm"
+                          disabled={loading}
+                          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm disabled:opacity-50"
                         >
-                          Deactivate Account
+                          {loading ? 'Deactivating...' : 'Deactivate Account'}
                         </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border border-red-300 rounded-lg p-6 bg-red-100">
-                    <div className="flex items-start gap-4">
-                      <UserX className="w-6 h-6 text-red-700 mt-1" />
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Account Permanently</h3>
-                        <p className="text-sm text-gray-600 mb-2">
-                          <strong>Warning:</strong> This action cannot be undone. All your data, projects, and tasks will be permanently deleted.
-                        </p>
-                        <p className="text-sm text-gray-600 mb-4">
-                          Please contact support at <a href="mailto:support@company.com" className="text-blue-600 hover:underline">support@company.com</a> to request account deletion.
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -804,8 +909,10 @@ const SettingsPage = () => {
 
       {/* Toast Notification */}
       {toast.show && (
-        <div className="fixed bottom-6 right-6 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 transition-all duration-300 ease-in-out z-50">
-          <Check className="w-5 h-5" />
+        <div className={`fixed bottom-6 right-6 px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 transition-all duration-300 ease-in-out z-50 ${
+          toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+        }`}>
+          {toast.type === 'success' ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
           <span>{toast.message}</span>
         </div>
       )}

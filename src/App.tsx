@@ -13,6 +13,7 @@ import Applications from "./pages/Applications";
 import SettingsPage from "./pages/Settings";
 import ProjectTracker from "./pages/Project";
 import Profile from "./pages/Profile";
+import Support from "./pages/support";
 
 const router = createBrowserRouter([
   {
@@ -42,6 +43,10 @@ const router = createBrowserRouter([
       {
         path: "Profile",
         element: <Profile />,
+      },
+      {
+        path: "support",
+        element: <Support />,
       },
     ],
     errorElement: <NotFoundPage />,

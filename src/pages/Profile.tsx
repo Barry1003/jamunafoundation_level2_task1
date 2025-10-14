@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { User, MessageSquare, Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
+import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin, Loader, Github } from 'lucide-react';
 import AboutTab from '../components/ProfileComponent/About';
 import ExperienceTab from '../components/ProfileComponent/Expirience';
 import SettingsTab from '../components/ProfileComponent/settings';
-
 
 type TabType = 'about' | 'experience' | 'Resume_settings';
 
@@ -17,31 +16,127 @@ interface UserType {
   authProvider: "local" | "github";
 }
 
+interface ResumeData {
+  fullName: string;
+  jobTitle: string;
+  phone: string;
+  location: string;
+  aboutMe: string;
+  socialLinks: {
+    facebook: string;
+    twitter: string;
+    linkedin: string;
+    instagram: string;
+    github: string;
+  };
+}
+
 const Profile: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('about');
   const [user, setUser] = useState<UserType | null>(null);
+  const [resumeData, setResumeData] = useState<ResumeData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const contacts = [
-    { name: 'Sophia', role: 'Project Manager', avatar: null },
-    { name: 'Mason', role: 'Art Director', avatar: null },
-    { name: 'Emily', role: 'UI/UX Manager', avatar: null },
-    { name: 'Daniel', role: 'Software Head', avatar: null },
-    { name: 'Natalie', role: 'AR Manager', avatar: null }
-  ];
-
+  // Fetch user from /api/auth/me
   useEffect(() => {
-    const storedUser = localStorage.getItem('activeUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    const fetchUser = async () => {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        console.log('❌ No token found');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        console.log('🔍 Fetching user from /api/auth/me');
+        const response = await fetch('http://localhost:5000/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log('📡 Response status:', response.status);
+
+        if (response.ok) {
+          const userData = await response.json();
+          console.log('✅ User data fetched:', userData);
+          setUser(userData);
+          
+          // Also save to localStorage for quick access
+          localStorage.setItem('activeUser', JSON.stringify(userData));
+        } else {
+          console.error('❌ Failed to fetch user');
+          localStorage.removeItem('token');
+          localStorage.removeItem('activeUser');
+        }
+      } catch (error) {
+        console.error('❌ Error fetching user:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
   }, []);
+
+  // Fetch resume data for sidebar
+  useEffect(() => {
+    const fetchResume = async () => {
+      if (!user) return;
+
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      try {
+        console.log('📋 Fetching resume for sidebar');
+        const response = await fetch(`http://localhost:5000/api/resume/${user._id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Resume data fetched for sidebar:', data);
+          setResumeData(data);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching resume for sidebar:', error);
+      }
+    };
+
+    fetchResume();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader className="w-8 h-8 animate-spin text-blue-600" />
+        <span className="ml-3 text-gray-600">Loading profile...</span>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Please log in to view your profile.</p>
+          <a href="/login" className="text-blue-600 hover:underline">Go to Login</a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Left Sidebar - Profile and Contacts */}
+      {/* Left Sidebar - Profile Info from Resume */}
       <div className="w-80 bg-white shadow-sm overflow-y-auto">
-        {/* Profile Section */}
         <div className="p-6 text-center border-b">
+          {/* Avatar */}
           {user?.avatar ? (
             <img
               src={user.avatar}
@@ -51,100 +146,142 @@ const Profile: React.FC = () => {
           ) : (
             <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center mb-3">
               <span className="text-3xl font-bold text-white">
-                {user?.firstName ? user.firstName[0].toUpperCase() : "?"}
+                {user?.fullName ? user.fullName[0].toUpperCase() : "?"}
               </span>
             </div>
           )}
-          <h2 className="text-xl font-bold text-gray-900">{user?.fullName || 'Guest User'}</h2>
-          <p className="text-sm text-gray-500 mb-4">
+
+          {/* Name and Username */}
+          <h2 className="text-xl font-bold text-gray-900">
+            {resumeData?.fullName || user?.fullName || 'Guest User'}
+          </h2>
+          <p className="text-sm text-gray-500 mb-2">
             @{user?.username || 'no-username'}
           </p>
 
-          <div className="flex gap-2 justify-center mb-4">
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
-              Follow
-            </button>
-            <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-1">
-              <MessageSquare className="w-4 h-4" />
-              Message
-            </button>
-          </div>
+          {/* Job Title from Resume */}
+          {resumeData?.jobTitle && (
+            <p className="text-sm text-blue-600 font-medium mb-4">
+              {resumeData.jobTitle}
+            </p>
+          )}
 
+          {/* Resume Info */}
           <div className="text-left space-y-3 mt-6">
-            <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1">About Me:</h3>
-              <p className="text-sm text-gray-700">Nil Yeager has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type.</p>
-            </div>
+            {/* About Me from Resume */}
+            {resumeData?.aboutMe && (
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1">About Me:</h3>
+                <p className="text-sm text-gray-700">{resumeData.aboutMe}</p>
+              </div>
+            )}
 
+            {/* Full Name */}
             <div>
               <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1">Full Name:</h3>
-              <p className="text-sm text-gray-700">{user?.fullName || 'N/A'}</p>
-            </div>
-
-            <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1">Mobile:</h3>
-              <p className="text-sm text-gray-700 flex items-center gap-2">
-                <Phone className="w-3 h-3" />
-                (123) 123 1234
+              <p className="text-sm text-gray-700">
+                {resumeData?.fullName || user?.fullName || 'N/A'}
               </p>
             </div>
 
-            <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1">Email:</h3>
-              <p className="text-sm text-gray-700 flex items-center gap-2">
-                <Mail className="w-3 h-3" />
-                {user?.email || 'Not provided'}
+            {/* Phone from Resume */}
+            {resumeData?.phone && (
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1">Mobile:</h3>
+                <p className="text-sm text-gray-700 flex items-center gap-2">
+                  <Phone className="w-3 h-3" />
+                  {resumeData.phone}
+                </p>
+              </div>
+            )}
+
+            {/* Email */}
+            {user?.email && (
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1">Email:</h3>
+                <p className="text-sm text-gray-700 flex items-center gap-2">
+                  <Mail className="w-3 h-3" />
+                  {user.email}
+                </p>
+              </div>
+            )}
+
+            {/* Location from Resume */}
+            {resumeData?.location && (
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1">Location:</h3>
+                <p className="text-sm text-gray-700 flex items-center gap-2">
+                  <MapPin className="w-3 h-3" />
+                  {resumeData.location}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Social Links from Resume */}
+          {resumeData?.socialLinks && (
+            <div className="flex justify-center gap-3 mt-6">
+              {resumeData.socialLinks.facebook && (
+                <a
+                  href={resumeData.socialLinks.facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  <Facebook className="w-5 h-5" />
+                </a>
+              )}
+              {resumeData.socialLinks.twitter && (
+                <a
+                  href={resumeData.socialLinks.twitter}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-500 transition-colors"
+                >
+                  <Twitter className="w-5 h-5" />
+                </a>
+              )}
+              {resumeData.socialLinks.instagram && (
+                <a
+                  href={resumeData.socialLinks.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-red-500 hover:text-red-600 transition-colors"
+                >
+                  <Instagram className="w-5 h-5" />
+                </a>
+              )}
+              {resumeData.socialLinks.linkedin && (
+                <a
+                  href={resumeData.socialLinks.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-700 hover:text-blue-800 transition-colors"
+                >
+                  <Linkedin className="w-5 h-5" />
+                </a>
+              )}
+              {resumeData.socialLinks.github && (
+                <a
+                  href={resumeData.socialLinks.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-800 hover:text-gray-900 transition-colors"
+                >
+                  <Github className="w-5 h-5" />
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* Show message if no resume data */}
+          {!resumeData && (
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-700">
+                Complete your resume in Settings to display your information here.
               </p>
             </div>
-
-            <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase mb-1">Location:</h3>
-              <p className="text-sm text-gray-700 flex items-center gap-2">
-                <MapPin className="w-3 h-3" />
-                USA
-              </p>
-            </div>
-          </div>
-
-          <div className="flex justify-center gap-3 mt-6">
-            <a href="#" className="text-blue-600 hover:text-blue-700 transition-colors">
-              <Facebook className="w-5 h-5" />
-            </a>
-            <a href="#" className="text-blue-400 hover:text-blue-500 transition-colors">
-              <Twitter className="w-5 h-5" />
-            </a>
-            <a href="#" className="text-red-500 hover:text-red-600 transition-colors">
-              <Instagram className="w-5 h-5" />
-            </a>
-            <a href="#" className="text-blue-700 hover:text-blue-800 transition-colors">
-              <Linkedin className="w-5 h-5" />
-            </a>
-          </div>
-        </div>
-
-        {/* Contacts Section */}
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-gray-900">Contact</h3>
-          </div>
-          <ul className="space-y-3">
-            {contacts.map((contact, index) => (
-              <li key={index} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center">
-                    <User className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{contact.name}</p>
-                    <p className="text-xs text-gray-500">{contact.role}</p>
-                  </div>
-                </div>
-                <button className="bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-blue-700 transition-colors">
-                  Reply
-                </button>
-              </li>
-            ))}
-          </ul>
+          )}
         </div>
       </div>
 
@@ -177,7 +314,7 @@ const Profile: React.FC = () => {
                 activeTab === 'Resume_settings' ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
-              Resume_settings
+              Resume Settings
               {activeTab === 'Resume_settings' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>}
             </button>
           </div>
@@ -185,10 +322,9 @@ const Profile: React.FC = () => {
 
         {/* Tab Content */}
         <div className="p-8">
-          {activeTab === 'about' && <AboutTab />}
+          {activeTab === 'about' && <AboutTab user={user} />}
           {activeTab === 'experience' && <ExperienceTab />} 
           {activeTab === 'Resume_settings' && <SettingsTab user={user} />}
-
         </div>
       </div>
     </div>

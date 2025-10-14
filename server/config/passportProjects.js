@@ -1,5 +1,3 @@
-// config/passportProjects.js
-
 import passport from "passport";
 import { Strategy as GitHubStrategy } from "passport-github2";
 import dotenv from "dotenv";
@@ -17,9 +15,10 @@ const githubProjectStrategy = new GitHubStrategy(
   {
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: process.env.GITHUB_CALLBACK_URL_PROJECTS || "http://localhost:5000/api/github/callback",
-    scope: ["repo", "user:email"], // Request repo access for project integration
-    passReqToCallback: true, // Pass request to callback
+    // ✅ FIXED: Callback URL now matches route mounting at /api/auth/github
+    callbackURL: process.env.GITHUB_CALLBACK_URL_PROJECTS || "http://localhost:5000/api/auth/github/callback",
+    scope: ["repo", "user:email"],
+    passReqToCallback: true,
   },
   async (req, accessToken, refreshToken, profile, done) => {
     try {
@@ -63,3 +62,4 @@ passport.deserializeUser((user, done) => {
 });
 
 export default passport;
+ 

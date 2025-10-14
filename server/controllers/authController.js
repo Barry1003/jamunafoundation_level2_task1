@@ -97,18 +97,74 @@ export const verifyToken = async (req, res) => {
   }
 };
 
+// ✅ GET CURRENT USER CONTROLLER
+export const getCurrentUser = async (req, res) => {
+  try {
+    res.json({
+      _id: req.user._id,
+      username: req.user.username,
+      fullName: req.user.fullName,
+      email: req.user.email,
+      avatar: req.user.avatar,
+      authProvider: req.user.authProvider,
+      hasResume: req.user.hasResume,
+      githubId: req.user.githubId,
+      githubProjectUsername: req.user.githubProjectUsername,
+      githubProjectAvatar: req.user.githubProjectAvatar,
+      createdAt: req.user.createdAt,
+      updatedAt: req.user.updatedAt,
+    });
+  } catch (error) {
+    console.error("Error fetching current user:", error);
+    res.status(500).json({ message: "Error fetching user data" });
+  }
+};
+
+// ✅ CHANGE PASSWORD (NEW)
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const user = await User.findById(req.user._id);
+
+    if (!user || user.authProvider !== 'local') {
+      return res.status(400).json({ message: "Password change not available for this account type" });
+    }
+
+    // Verify current password
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    }
+
+    // Validate new password
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({ message: "Error changing password" });
+  }
+};
+
 // 🆕 GITHUB OAUTH CALLBACK HANDLER
 export const githubCallback = async (req, res) => {
   try {
-    // Passport attaches user to req.user after successful authentication
     if (!req.user) {
       return res.redirect(`${process.env.FRONTEND_URL}/login?error=authentication_failed`);
     }
 
-    // Generate JWT token for the GitHub user
     const token = generateToken(req.user._id);
-
-    // Redirect to frontend with token
     res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
   } catch (err) {
     console.error("GitHub Callback Error:", err);

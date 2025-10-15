@@ -60,21 +60,14 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
   const getToken = () => localStorage.getItem('token');
 
   useEffect(() => {
-    console.log('🔍 AboutTab useEffect triggered');
-    console.log('👤 User prop:', user);
-    
     async function fetchResume() {
       if (!user) {
-        console.log('⚠️ No user found, skipping fetch');
         setLoading(false);
         return;
       }
 
       const token = getToken();
-      console.log('🔑 Token exists:', !!token);
-      
       if (!token) {
-        console.log('❌ No token found');
         setError('Not authenticated');
         setLoading(false);
         return;
@@ -82,9 +75,6 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
 
       try {
         setLoading(true);
-        console.log('📋 Fetching resume for user:', user._id);
-        console.log('🌐 API URL:', `${API_BASE_URL}/resume/${user._id}`);
-        
         const response = await fetch(`${API_BASE_URL}/resume/${user._id}`, {
           headers: {
             'Content-Type': 'application/json',
@@ -92,31 +82,16 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
           },
         });
 
-        console.log('📡 Response status:', response.status);
-        console.log('📡 Response ok:', response.ok);
-
         if (response.ok) {
           const data = await response.json();
-          console.log('✅ Resume data received:', data);
-          console.log('📦 Selected Projects:', data.selectedProjects);
-          console.log('📊 Data structure:', {
-            hasFullName: !!data.fullName,
-            hasJobTitle: !!data.jobTitle,
-            hasAboutMe: !!data.aboutMe,
-            skillsCount: data.skills?.length || 0,
-            experiencesCount: data.experiences?.length || 0,
-            projectsCount: data.selectedProjects?.length || 0
-          });
           setResumeData(data);
           setError('');
         } else {
           const errorData = await response.json();
-          console.log('❌ Error response:', errorData);
           setError(errorData.message || 'Failed to load resume');
         }
       } catch (err) {
-        console.error('❌ Error fetching resume:', err);
-        setError('Error loading resume data');
+        setError(`Error loading resume data ${err}`);
       } finally {
         setLoading(false);
       }
@@ -131,12 +106,16 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
     try {
       const html2pdf = (await import('html2pdf.js')).default;
 
+      // const assertions to satisfy ESLint and TS literal type requirements
+      const imageOptions = { type: 'jpeg', quality: 0.98 } as const;
+      const jsPDFOptions = { unit: 'in', format: 'a4', orientation: 'portrait' } as const;
+
       const opt = {
         margin: 0.5,
         filename: `${resumeData?.fullName || 'resume'}_resume.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
+        image: imageOptions,
         html2canvas: { scale: 2, logging: false },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+        jsPDF: jsPDFOptions,
       };
 
       html2pdf().set(opt).from(resumeRef.current).save();
@@ -189,16 +168,19 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
     );
   }
 
-  const hasContent = resumeData.aboutMe || 
-                     resumeData.skills?.length > 0 || 
-                     resumeData.experiences?.length > 0 || 
-                     resumeData.selectedProjects?.length > 0;
+  const hasContent =
+    resumeData.aboutMe ||
+    resumeData.skills?.length > 0 ||
+    resumeData.experiences?.length > 0 ||
+    resumeData.selectedProjects?.length > 0;
 
   if (!hasContent) {
     return (
       <div className="text-center py-12 bg-gray-50 rounded-lg">
         <p className="text-gray-600 mb-4">Your resume is empty.</p>
-        <p className="text-sm text-gray-500">Go to Settings to add your information, skills, experience, and projects.</p>
+        <p className="text-sm text-gray-500">
+          Go to Settings to add your information, skills, experience, and projects.
+        </p>
       </div>
     );
   }
@@ -229,9 +211,7 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
               {resumeData.fullName || user?.fullName || 'Your Name'}
             </h1>
             {resumeData.jobTitle && (
-              <h2 className="text-xl text-blue-600 font-medium mb-4">
-                {resumeData.jobTitle}
-              </h2>
+              <h2 className="text-xl text-blue-600 font-medium mb-4">{resumeData.jobTitle}</h2>
             )}
 
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600">
@@ -256,10 +236,10 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
             </div>
 
             {/* Social Links */}
-            {(resumeData.socialLinks.linkedin || 
-              resumeData.socialLinks.github || 
-              resumeData.socialLinks.twitter || 
-              resumeData.socialLinks.facebook || 
+            {(resumeData.socialLinks.linkedin ||
+              resumeData.socialLinks.github ||
+              resumeData.socialLinks.twitter ||
+              resumeData.socialLinks.facebook ||
               resumeData.socialLinks.instagram) && (
               <div className="flex flex-wrap gap-4 mt-3">
                 {resumeData.socialLinks.linkedin && (
@@ -338,8 +318,8 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
               </h3>
               <div className="flex flex-wrap gap-2">
                 {resumeData.skills.map((skill, index) => (
-                  <span 
-                    key={index} 
+                  <span
+                    key={index}
                     className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium"
                   >
                     {skill}
@@ -357,7 +337,10 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
               </h3>
               <div className="space-y-6">
                 {resumeData.experiences.map((exp, index) => (
-                  <div key={exp._id || index} className="relative pl-6 border-l-2 border-blue-600">
+                  <div
+                    key={exp._id || index}
+                    className="relative pl-6 border-l-2 border-blue-600"
+                  >
                     <div className="absolute w-3 h-3 bg-blue-600 rounded-full -left-[7px] top-1" />
                     <div>
                       <h4 className="text-lg font-semibold text-gray-900">{exp.title}</h4>
@@ -389,7 +372,9 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="text-lg font-semibold text-gray-900">{project.name}</h4>
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(project.status)}`}
+                        className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(
+                          project.status
+                        )}`}
                       >
                         {project.status.replace('-', ' ')}
                       </span>
@@ -401,7 +386,10 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
                       <div className="flex flex-wrap gap-2 mb-2">
                         <span className="text-xs text-gray-600 font-medium">Technologies:</span>
                         {project.technologies.map((tech, index) => (
-                          <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                          <span
+                            key={index}
+                            className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs"
+                          >
                             {tech}
                           </span>
                         ))}

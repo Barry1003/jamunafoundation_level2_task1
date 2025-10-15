@@ -7,27 +7,19 @@ import {
   Pie,
   Cell,
   Tooltip,
-} from 'recharts';
-import type { TooltipProps } from 'recharts';
+} from 'recharts'; 
 import { MoreVertical, X } from 'lucide-react';
 
 type ChartType = 'followers' | 'growth' | 'posts' | 'interactions' | null;
 
-type PayloadItem = {
-  payload: { day: string; value: number };
-};
-
-const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload }) => {
-  const items = payload as PayloadItem[] | undefined;
-
-  if (active && items && items.length) {
-    const data = items[0].payload;
+const CustomTooltip: React.FC<any> = ({ active, payload}) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload as { day: string; value: number };
     return (
       <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200">
         <p className="text-xs font-semibold text-gray-900">{data.day}</p>
         <p className="text-xs text-gray-600">
-          Value:{' '}
-          <span className="font-semibold">{data.value?.toLocaleString() ?? '0'}</span>
+          Value: <span className="font-semibold">{data.value?.toLocaleString() ?? '0'}</span>
         </p>
       </div>
     );

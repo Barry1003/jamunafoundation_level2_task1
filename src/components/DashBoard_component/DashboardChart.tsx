@@ -65,7 +65,7 @@ const jobsData = [
         {/* Total Employees Card */}
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-sm text-gray-600">Total Employees</h3>
+            <h3 className="text-sm text-gray-600">Total Jobs Application</h3>
             <span className="text-2xl font-bold text-gray-900">590</span>
           </div>
           
@@ -102,11 +102,11 @@ const jobsData = [
           <div className="flex justify-center gap-8">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-              <span className="text-sm text-gray-700">Male</span>
+              <span className="text-sm text-gray-700">Accepted</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              <span className="text-sm text-gray-700">Female</span>
+              <span className="text-sm text-gray-700">Rejected</span>
             </div>
           </div>
         </div>

@@ -6,13 +6,15 @@ import {
   BarChart2,
   UserRound,
   Settings,
-  // ChevronRight,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
 const Sidebar = () => {
   const [active, setActive] = useState("Dashboard");
+  const [isMinimized, setIsMinimized] = useState(false);
 
   const menu = [
     { title: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, path: "/dashboard" },
@@ -28,72 +30,79 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="bg-gradient-to-b from-[#101828] to-[#1E293B] text-gray-300 w-64 h-screen flex flex-col justify-between shadow-xl sticky top-0">
-      {/* Top Section */}
+    <aside
+      className={`bg-gradient-to-b from-[#101828] to-[#1E293B] text-gray-300
+      ${isMinimized ? "w-20" : "w-64"} transition-all duration-300
+      h-screen flex flex-col justify-between shadow-xl sticky top-0`}
+    >
+      {/* Toggle Minimize Button */}
+      <div className="flex items-center justify-end p-2">
+        <button
+          aria-label={isMinimized ? "Expand sidebar" : "Minimize sidebar"}
+          className={`rounded-full p-1 hover:bg-blue-600 transition-all`}
+          onClick={() => setIsMinimized(prev => !prev)}
+        >
+          {isMinimized ? (
+            <ChevronRight className="w-5 h-5 text-white" />
+          ) : (
+            <ChevronLeft className="w-5 h-5 text-white" />
+          )}
+        </button>
+      </div>
+
       <div>
         {/* Logo */}
-        <div className="flex items-center gap-2 px-6 py-5 border-b border-white/10">
-          <img
-            src="/logo.png"
-            alt="EmployX"
-            className="w-8 h-8"
-          />
-          <h1 className="text-xl  font-edu font-extrabold text-white">EmployX</h1>
+        <div className={`flex items-center gap-2 px-6 py-5 border-b border-white/10 
+          ${isMinimized && "justify-center"}`}>
+          <img src="/logo.png" alt="EmployX" className="w-8 h-8" />
+          {!isMinimized && (<h1 className="text-xl font-edu font-extrabold text-white">EmployX</h1>)}
         </div>
 
         {/* Main Menu */}
-        <nav className="mt-6 px-4 space-y-1">
+        <nav className={`mt-6 px-4 space-y-1`}>
           {menu.map((item) => (
             <Link
               key={item.title}
               to={item.path}
               onClick={() => setActive(item.title)}
-              className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-all ${
-                active === item.title
+              className={`flex items-center ${isMinimized ? "justify-center" : "justify-between"}
+                px-4 py-2.5 rounded-lg transition-all
+                ${active === item.title
                   ? "bg-blue-600 text-white"
-                  : "hover:bg-white/10 hover:text-white"
-              }`}
+                  : "hover:bg-white/10 hover:text-white"}
+              `}
             >
-              <div className="flex items-center gap-3">
+              <div className={`flex items-center gap-3`}>
                 {item.icon}
-                <span className="text-sm font-medium">{item.title}</span>
+                {!isMinimized && <span className="text-sm font-medium">{item.title}</span>}
               </div>
-              {/* <ChevronRight
-                className={`w-4 h-4 transition-transform ${
-                  active === item.title ? "rotate-90" : ""
-                }`}
-              /> */}
             </Link>
           ))}
         </nav>
 
-        {/* Components Section */}
-        <div className="mt-8 px-6">
-          <p className="text-xs font-semibold text-gray-500 mb-3 tracking-wide uppercase">
-            Others
-          </p>
-
+        <div className={`mt-8 px-6`}>
+          {!isMinimized &&
+            <p className="text-xs font-semibold text-gray-500 mb-3 tracking-wide uppercase">
+              Others
+            </p>
+          }
           <div className="space-y-1">
             {others.map((item) => (
               <Link
                 key={item.title}
                 to={item.path}
                 onClick={() => setActive(item.title)}
-                className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-all ${
-                  active === item.title
+                className={`flex items-center ${isMinimized ? "justify-center" : "justify-between"}
+                  px-4 py-2.5 rounded-lg transition-all
+                  ${active === item.title
                     ? "bg-blue-600 text-white"
-                    : "hover:bg-white/10 hover:text-white"
-                }`}
+                    : "hover:bg-white/10 hover:text-white"}
+                `}
               >
                 <div className="flex items-center gap-3">
                   {item.icon}
-                  <span className="text-sm font-medium">{item.title}</span>
+                  {!isMinimized && <span className="text-sm font-medium">{item.title}</span>}
                 </div>
-                {/* <ChevronRight
-                  className={`w-4 h-4 transition-transform ${
-                    active === item.title ? "rotate-90" : ""
-                  }`}
-                /> */}
               </Link>
             ))}
           </div>
@@ -101,7 +110,8 @@ const Sidebar = () => {
       </div>
 
       {/* Footer */}
-      <footer className="text-center text-xs text-gray-500 py-5 border-t border-white/10">
+      <footer className={`text-center text-xs text-gray-500 py-5 border-t border-white/10 
+        transition-all duration-200 ${isMinimized && "hidden"}`}>
         © 2025 EmployX
       </footer>
     </aside>

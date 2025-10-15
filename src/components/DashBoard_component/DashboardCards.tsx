@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 const DashboardCards = () => {
   const [user, setUser] = useState<{
@@ -59,18 +60,21 @@ const DashboardCards = () => {
       img: "/card1.png",
       bgColor: "bg-blue-50",
       linkText: "10 new jobs for you →",
+      path: "/job"
     },
     {
-      title: "My Learning",
+      title: "My Projects",
       img: "/card-2.png",
       bgColor: "bg-purple-50",
       linkText: "3 essential courses →",
+      path: "/projects"
     },
     {
       title: "My Social Story",
       img: "/card-3.png",
       bgColor: "bg-indigo-50",
       linkText: "4 New Messages →",
+      path: "/Profile"
     },
   ];
 
@@ -103,7 +107,7 @@ const DashboardCards = () => {
           </div>
 
           <button className="flex items-center text-sm text-blue-600 font-medium hover:underline">
-            {card.linkText} <ArrowRight className="ml-1 w-4 h-4" />
+            <Link to={card.path}>{card.linkText} <ArrowRight className="ml-1 w-4 h-4" /></Link> 
           </button>
         </div>
       ))}

@@ -4,19 +4,48 @@ import cors from "cors";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import session from "express-session";
-import passport from "./config/passport.js";
+import passport from "../config/passport.js";
 
 // Import routes
-import authRoutes from "./routes/authRoutes.js";
-import userRoutes from "./routes/userRoutes.js";   
-import githubRoutes from "./routes/githubRoutes.js";
-import projectRoutes from "./routes/projectRoutes.js";
-import applicationRoutes from "./routes/applicationRoutes.js";
-import resumeRoutes from "./routes/resume.js";
+import authRoutes from "../routes/authRoutes.js";
+import userRoutes from "../routes/userRoutes.js";
+import githubRoutes from "../routes/githubRoutes.js";
+import projectRoutes from "../routes/projectRoutes.js";
+import applicationRoutes from "../routes/applicationRoutes.js";
+import resumeRoutes from "../routes/resume.js";
 
 dotenv.config();
 
 const app = express();
+
+// ==========================================
+// MONGODB CONNECTION (CACHED FOR SERVERLESS)
+// ==========================================
+let isConnected = false;
+
+const connectDB = async () => {
+  if (isConnected) {
+    console.log("✅ Using existing MongoDB connection");
+    return;
+  }
+
+  try {
+    const db = await mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/job-tracker", {
+      maxPoolSize: 10,
+      minPoolSize: 2,
+      serverSelectionTimeoutMS: 5000,
+    });
+    
+    isConnected = db.connections[0].readyState === 1;
+    console.log("✅ MongoDB connected successfully");
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err);
+    throw err;
+  }
+};
+
+// Initialize connection
+connectDB();
 
 // ==========================================
 // MIDDLEWARE
@@ -40,6 +69,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 24 * 60 * 60 * 1000,
     },
   })
@@ -48,14 +79,6 @@ app.use(
 // Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
-
-// ==========================================
-// MONGODB CONNECTION
-// ==========================================
-mongoose
-  .connect(process.env.MONGODB_URI || "mongodb://localhost:27017/job-tracker")  // ✅ Removed deprecated options
-  .then(() => console.log("✅ MongoDB connected successfully"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // ==========================================
 // ROUTES
@@ -67,10 +90,10 @@ app.use("/api/auth", authRoutes);
 // User Routes (Profile Management, Export Data, Deactivate Account)
 app.use("/api/users", userRoutes);
 
-// ✅ FIXED: GitHub Routes now mounted at /api/auth/github to match OAuth callback
+// GitHub Routes now mounted at /api/auth/github to match OAuth callback
 app.use("/api/auth/github", githubRoutes);
 
-// Project routes 
+// Project routes
 app.use("/api/projects", projectRoutes);
 
 // Application routes (Job Applications CRUD)
@@ -128,10 +151,11 @@ app.get("/api/jobs", (req, res) => {
 // HEALTH CHECK
 // ==========================================
 app.get("/api/health", (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    mongodb: isConnected ? 'connected' : 'disconnected'
   });
 });
 
@@ -145,10 +169,10 @@ app.get("/", (req, res) => {
 // ==========================================
 // 404 HANDLER
 // ==========================================
-app.all("/*splat", (req, res) => {
-  res.status(404).json({ 
+app.use((req, res) => {
+  res.status(404).json({
     message: "Route not found",
-    path: req.originalUrl 
+    path: req.originalUrl
   });
 });
 
@@ -157,23 +181,23 @@ app.all("/*splat", (req, res) => {
 // ==========================================
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ 
+  res.status(500).json({
     message: "Something went wrong!",
     error: process.env.NODE_ENV === "development" ? err.message : undefined
   });
 });
 
 // ==========================================
-// START SERVER
+// START SERVER (LOCAL ONLY)
 // ==========================================
-const PORT = process.env.PORT || 5000;
-
-// Start server locally (Vercel will ignore this in production)
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-});
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  });
+}
 
 // Export for Vercel serverless functions
 export default app;

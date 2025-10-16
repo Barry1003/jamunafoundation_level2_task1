@@ -56,16 +56,28 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Configure CORS to allow credentials
 app.use(
   cors({
-    origin: [
-      'https://jamunafoundationlevel2task1.vercel.app', // Your frontend
-      'http://localhost:5173' // For local development
-    ],
+    origin: true, // Allow all origins temporarily to debug
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['Set-Cookie'],
+    maxAge: 86400 // 24 hours
   })
 );
 
+// Explicit CORS headers for all responses (Vercel serverless compatibility)
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 // Session middleware (required for passport and GitHub OAuth)
 app.use(

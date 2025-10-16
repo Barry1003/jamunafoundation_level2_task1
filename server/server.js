@@ -53,10 +53,7 @@ app.use(passport.session());
 // MONGODB CONNECTION
 // ==========================================
 mongoose
-  .connect(process.env.MONGODB_URI || "mongodb://localhost:27017/job-tracker", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGODB_URI || "mongodb://localhost:27017/job-tracker")  // ✅ Removed deprecated options
   .then(() => console.log("✅ MongoDB connected successfully"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
@@ -171,10 +168,12 @@ app.use((err, req, res, next) => {
 // ==========================================
 const PORT = process.env.PORT || 5000;
 
-// Only listen in development, Vercel handles this in production
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-}
+// Start server locally (Vercel will ignore this in production)
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+});
 
 // Export for Vercel serverless functions
 export default app;

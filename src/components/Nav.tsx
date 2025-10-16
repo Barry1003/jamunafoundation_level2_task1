@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { Bell, LogOut, MessageCircle, Search, Sun } from "lucide-react";
+import { apiRequest, API_ENDPOINTS } from "../config/api";
 
 interface User {
   _id: string;
@@ -12,8 +12,6 @@ interface User {
   avatar?: string; // 🆕 NEW - GitHub avatar support
   authProvider: "local" | "github"; // 🆕 NEW - Auth provider
 }
-
-const API_URL = "/api/auth";
 
 const Header = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -35,17 +33,12 @@ const Header = () => {
       }
 
       try {
-        const response = await axios.post(
-          `${API_URL}/verify`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const data = response.data;
+        const data = await apiRequest(API_ENDPOINTS.AUTH.VERIFY, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (data?.valid && data.user) {
           const userData = data.user;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Loader, Briefcase, Calendar } from 'lucide-react';
+import { apiRequest, API_ENDPOINTS } from '../../config/api';
 
 interface UserType {
   _id: string;
@@ -46,25 +47,19 @@ const ExperienceTab: React.FC<ExperienceTabProps> = ({ user }) => {
         setLoading(true);
         console.log('📋 Fetching experiences for user:', user._id);
 
-        const response = await fetch(`/api/resume/${user._id}`, {
+        const data = await apiRequest(`${API_ENDPOINTS.RESUME.GET}/${user._id}`, {
+          method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ Resume data received:', data);
-          setExperiences(data.experiences || []);
-          setError('');
-        } else {
-          const errorData = await response.json();
-          setError(errorData.message || 'Failed to load experiences');
-        }
-      } catch (err) {
+        console.log('✅ Resume data received:', data);
+        setExperiences(data.experiences || []);
+        setError('');
+      } catch (err: any) {
         console.error('❌ Error fetching experiences:', err);
-        setError('Error loading experience data');
+        setError(err.message || 'Error loading experience data');
       } finally {
         setLoading(false);
       }

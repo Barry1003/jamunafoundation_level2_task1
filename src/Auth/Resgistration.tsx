@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Eye, EyeOff, Github } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL, apiRequest, API_ENDPOINTS } from "../config/api";
 
 interface FormData {
   email: string;
@@ -9,8 +10,6 @@ interface FormData {
   confirmPassword?: string;
   fullName?: string;
 }
-
-const URL = "/api/auth";
 
 const LoginPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -30,9 +29,8 @@ const LoginPage: React.FC = () => {
   // ✅ REGISTER USER
   const registerUser = async (data: FormData): Promise<boolean> => {
     try {
-      const response = await fetch(`${URL}/register`, {
+      const result = await apiRequest(API_ENDPOINTS.AUTH.REGISTER, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fullName: data.fullName,
           email: data.email,
@@ -40,23 +38,16 @@ const LoginPage: React.FC = () => {
         }),
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        setFormError(result.message || "Registration failed");
-        return false;
-      }
-
-      // ✅ Save token and user (UPDATED - backend returns { user, token })
+      // ✅ Save token and user
       localStorage.setItem("token", result.token);
       localStorage.setItem("activeUser", JSON.stringify(result.user));
 
       setFormError("");
       navigate("/dashboard");
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error("Registration error:", err);
-      setFormError("Something went wrong during registration");
+      setFormError(err.message || "Something went wrong during registration");
       return false;
     }
   };
@@ -64,32 +55,24 @@ const LoginPage: React.FC = () => {
   // ✅ LOGIN USER
   const loginUser = async (data: FormData): Promise<boolean> => {
     try {
-      const response = await fetch(`${URL}/login`, {
+      const result = await apiRequest(API_ENDPOINTS.AUTH.LOGIN, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: data.email,
           password: data.password,
         }),
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        setFormError(result.message || "Invalid credentials");
-        return false;
-      }
-
-      // ✅ Save token and user (UPDATED - backend returns { user, token })
+      // ✅ Save token and user
       localStorage.setItem("token", result.token);
       localStorage.setItem("activeUser", JSON.stringify(result.user));
 
       setFormError("");
       navigate("/dashboard");
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error("Login error:", err);
-      setFormError("Something went wrong during login");
+      setFormError(err.message || "Something went wrong during login");
       return false;
     }
   };
@@ -97,7 +80,7 @@ const LoginPage: React.FC = () => {
   // 🆕 HANDLE GITHUB LOGIN
   const handleGithubLogin = () => {
     // Redirect to backend GitHub OAuth route
-    window.location.href = `${URL}/github`;
+    window.location.href = `${API_BASE_URL}${API_ENDPOINTS.AUTH.GITHUB}`;
   };
 
   // ✅ VERIFY TOKEN (Runs once on mount)
@@ -107,17 +90,14 @@ const LoginPage: React.FC = () => {
       if (!token) return;
 
       try {
-        const response = await fetch(`${URL}/verify`, {
+        const result = await apiRequest(API_ENDPOINTS.AUTH.VERIFY, {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         });
 
-        const result = await response.json();
-
-        if (response.ok && result.valid) {
+        if (result.valid) {
           console.log("✅ Token valid. Staying logged in.");
           navigate("/dashboard");
         } else {

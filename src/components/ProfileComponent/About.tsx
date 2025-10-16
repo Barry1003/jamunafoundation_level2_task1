@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Download, Mail, Phone, MapPin, Globe, Linkedin, Twitter, Facebook, Loader, Github } from 'lucide-react';
+import {  apiRequest, API_ENDPOINTS } from '../../config/api';
 
 interface UserType {
   _id: string;
@@ -49,8 +50,6 @@ interface ResumeData {
   }>;
 }
 
-const API_BASE_URL = '/api/';
-
 const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
   const [resumeData, setResumeData] = useState<ResumeData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,23 +74,17 @@ const AboutTab: React.FC<AboutTabProps> = ({ user }) => {
 
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/resume/${user._id}`, {
+        const data = await apiRequest(`${API_ENDPOINTS.RESUME.GET}/${user._id}`, {
+          method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          setResumeData(data);
-          setError('');
-        } else {
-          const errorData = await response.json();
-          setError(errorData.message || 'Failed to load resume');
-        }
-      } catch (err) {
-        setError(`Error loading resume data ${err}`);
+        setResumeData(data);
+        setError('');
+      } catch (err: any) {
+        setError(err.message || 'Failed to load resume');
       } finally {
         setLoading(false);
       }

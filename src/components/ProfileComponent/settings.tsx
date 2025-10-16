@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
-
+import { apiRequest, API_ENDPOINTS } from '../../config/api';
 
 interface UserType {
   _id: string;
@@ -9,11 +9,9 @@ interface UserType {
   email?: string;
 }
 
-
 interface SettingsTabProps {
   user?: UserType | null;
 }
-
 
 interface Experience {
   _id?: string;
@@ -24,10 +22,6 @@ interface Experience {
   description: string;
   current: boolean;
 }
-
-
-const API_BASE_URL = '/api/';
-
 
 const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
   const [loading, setLoading] = useState(false);
@@ -58,11 +52,9 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
     current: false
   });
 
-
   const getToken = () => {
     return localStorage.getItem('token');
   };
-
 
   useEffect(() => {
     async function fetchData() {
@@ -74,76 +66,64 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
         return;
       }
 
-
       try {
         setLoading(true);
 
-
         // Fetch resume data
-        const resumeRes = await fetch(`${API_BASE_URL}/resume/${user._id}`, {
+        const resumeData = await apiRequest(`${API_ENDPOINTS.RESUME.GET}/${user._id}`, {
+          method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            Authorization: `Bearer ${token}`
           }
         });
 
-
-        if (resumeRes.ok) {
-          const resumeData = await resumeRes.json();
-          console.log('📋 Fetched Resume Data:', resumeData);
-          
-          setForm({
-            fullName: resumeData.fullName || user.fullName || '',
-            jobTitle: resumeData.jobTitle || '',
-            phone: resumeData.phone || '',
-            location: resumeData.location || '',
-            aboutMe: resumeData.aboutMe || '',
-            socialLinks: resumeData.socialLinks || { 
-              facebook: '', 
-              twitter: '', 
-              linkedin: '', 
-              instagram: '',
-              github: ''
-            },
-            skills: resumeData.skills || [],
-            education: resumeData.education || [],
-            experiences: resumeData.experiences || [],
-            selectedProjects: resumeData.selectedProjects?.map((p: any) => 
-              typeof p === 'string' ? p : p._id
-            ) || []
-          });
-          
-          console.log('📦 Selected Project IDs:', resumeData.selectedProjects?.map((p: any) => 
+        console.log('📋 Fetched Resume Data:', resumeData);
+        
+        setForm({
+          fullName: resumeData.fullName || user.fullName || '',
+          jobTitle: resumeData.jobTitle || '',
+          phone: resumeData.phone || '',
+          location: resumeData.location || '',
+          aboutMe: resumeData.aboutMe || '',
+          socialLinks: resumeData.socialLinks || { 
+            facebook: '', 
+            twitter: '', 
+            linkedin: '', 
+            instagram: '',
+            github: ''
+          },
+          skills: resumeData.skills || [],
+          education: resumeData.education || [],
+          experiences: resumeData.experiences || [],
+          selectedProjects: resumeData.selectedProjects?.map((p: any) => 
             typeof p === 'string' ? p : p._id
-          ));
-        } else {
-          setForm((prev: any) => ({
-            ...prev,
-            fullName: user.fullName || ''
-          }));
-        }
-
+          ) || []
+        });
+        
+        console.log('📦 Selected Project IDs:', resumeData.selectedProjects?.map((p: any) => 
+          typeof p === 'string' ? p : p._id
+        ));
 
         // Fetch all projects
-        const projectsRes = await fetch(`${API_BASE_URL}/projects`, {
+        const projectsData = await apiRequest(API_ENDPOINTS.PROJECTS.GET_ALL, {
+          method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            Authorization: `Bearer ${token}`
           }
         });
 
-
-        if (projectsRes.ok) {
-          const projectsData = await projectsRes.json();
-          console.log('📦 Fetched Projects:', projectsData);
-          console.log('📦 Number of projects:', projectsData.length);
-          setProjects(projectsData);
-        }
-
+        console.log('📦 Fetched Projects:', projectsData);
+        console.log('📦 Number of projects:', projectsData.length);
+        setProjects(projectsData);
 
       } catch (err: any) {
         console.error('❌ Error loading data:', err);
         setError(err.message || 'Error loading data');
+        // Set default form if resume doesn't exist
+        setForm((prev: any) => ({
+          ...prev,
+          fullName: user.fullName || ''
+        }));
       } finally {
         setLoading(false);
       }
@@ -152,12 +132,10 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
     fetchData();
   }, [user]);
 
-
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
     setForm((prev: any) => ({ ...prev, [name]: value }));
   }
-
 
   function handleSocialChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
@@ -166,7 +144,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
       socialLinks: { ...prev.socialLinks, [name]: value }
     }));
   }
-
 
   function handleAddSkill() {
     if (newSkill.trim()) {
@@ -178,14 +155,12 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
     }
   }
 
-
   function handleRemoveSkill(index: number) {
     setForm((prev: any) => ({
       ...prev,
       skills: prev.skills.filter((_: string, i: number) => i !== index)
     }));
   }
-
 
   function openExperienceModal(experience?: Experience) {
     if (experience) {
@@ -205,7 +180,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
     setShowExperienceModal(true);
   }
 
-
   function closeExperienceModal() {
     setShowExperienceModal(false);
     setEditingExperience(null);
@@ -219,7 +193,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
     });
   }
 
-
   function handleExperienceChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
@@ -229,7 +202,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
       [name]: type === 'checkbox' ? checked : value
     }));
   }
-
 
   function handleSaveExperience() {
     if (!experienceForm.title || !experienceForm.company || !experienceForm.startDate) {
@@ -257,14 +229,12 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
     closeExperienceModal();
   }
 
-
   function handleDeleteExperience(index: number) {
     setForm((prev: any) => ({
       ...prev,
       experiences: prev.experiences.filter((_: Experience, i: number) => i !== index)
     }));
   }
-
 
   function handleProjectToggle(projectId: string) {
     setForm((prev: any) => {
@@ -277,11 +247,9 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
     });
   }
 
-
   function navigateToProjects() {
     window.location.href = '/projects';
   }
-
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -291,19 +259,16 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
       return;
     }
 
-
     const token = getToken();
     if (!token) {
       setError('Not authenticated. Please login.');
       return;
     }
 
-
     try {
       setLoading(true);
       setError('');
       setSuccess('');
-
 
       console.log('💾 Saving Resume...');
       console.log('💾 Selected Project IDs:', form.selectedProjects);
@@ -320,24 +285,14 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
 
       console.log('💾 Cleaned Form Data:', formDataToSend);
 
-
-      const response = await fetch(`${API_BASE_URL}/resume/${user._id}`, {
+      const savedResume = await apiRequest(`${API_ENDPOINTS.RESUME.UPDATE}/${user._id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify(formDataToSend)
       });
 
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save resume');
-      }
-
-
-      const savedResume = await response.json();
       console.log('✅ Resume Saved Successfully:', savedResume);
       console.log('✅ Saved selectedProjects:', savedResume.selectedProjects);
       
@@ -366,7 +321,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
       setSuccess('Resume saved successfully! ✅');
       setTimeout(() => setSuccess(''), 3000);
 
-
     } catch (err: any) {
       console.error('❌ Error saving resume:', err);
       setError(err.message || 'Error saving data');
@@ -375,16 +329,13 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
     }
   }
 
-
   if (!user) {
     return <div className="text-red-600">Please log in to edit your resume.</div>;
   }
 
-
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h2 className="text-3xl font-bold mb-8">Resume Settings</h2>
-
 
       {success && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
@@ -392,13 +343,11 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
         </div>
       )}
 
-
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
           Error: {error}
         </div>
       )}
-
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Personal Info Section */}
@@ -420,7 +369,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
               </p>
             </div>
 
-
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block mb-1 font-medium">Job Title</label>
@@ -432,7 +380,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
                   placeholder="e.g. Senior Developer"
                 />
               </div>
-
 
               <div>
                 <label className="block mb-1 font-medium">Phone</label>
@@ -446,7 +393,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
               </div>
             </div>
 
-
             <div>
               <label className="block mb-1 font-medium">Location</label>
               <input 
@@ -457,7 +403,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
                 placeholder="e.g. San Francisco, CA"
               />
             </div>
-
 
             <div>
               <label className="block mb-1 font-medium">About Me</label>
@@ -472,7 +417,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
             </div>
           </div>
         </section>
-
 
         {/* Social Links Section */}
         <section className="bg-white p-6 rounded-lg shadow-sm border">
@@ -492,7 +436,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
             ))}
           </div>
         </section>
-
 
         {/* Skills Section */}
         <section className="bg-white p-6 rounded-lg shadow-sm border">
@@ -516,7 +459,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
             </button>
           </div>
 
-
           <div className="flex flex-wrap gap-2">
             {form.skills.map((skill: string, index: number) => (
               <div
@@ -535,12 +477,10 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
             ))}
           </div>
 
-
           {form.skills.length === 0 && (
             <p className="text-gray-500 text-sm">No skills added yet. Add your first skill above.</p>
           )}
         </section>
-
 
         {/* Experience Section */}
         <section className="bg-white p-6 rounded-lg shadow-sm border">
@@ -555,7 +495,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
               Add Experience
             </button>
           </div>
-
 
           <div className="space-y-4">
             {form.experiences.map((exp: Experience, index: number) => (
@@ -592,12 +531,10 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
             ))}
           </div>
 
-
           {form.experiences.length === 0 && (
             <p className="text-gray-500 text-sm">No experience added yet. Click "Add Experience" to get started.</p>
           )}
         </section>
-
 
         {/* Projects Section */}
         <section className="bg-white p-6 rounded-lg shadow-sm border">
@@ -612,7 +549,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
               Add New Project
             </button>
           </div>
-
 
           {projects.length === 0 ? (
             <div className="text-center py-8 bg-gray-50 rounded-lg">
@@ -655,7 +591,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
           )}
         </section>
 
-
         <button 
           type="submit" 
           disabled={loading}
@@ -666,7 +601,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
           {loading ? 'Saving...' : 'Save Resume'}
         </button>
       </form>
-
 
       {/* Experience Modal */}
       {showExperienceModal && (
@@ -681,7 +615,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
               </button>
             </div>
 
-
             <div className="space-y-4">
               <div>
                 <label className="block mb-1 font-medium">Job Title *</label>
@@ -694,7 +627,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
                 />
               </div>
 
-
               <div>
                 <label className="block mb-1 font-medium">Company *</label>
                 <input
@@ -705,7 +637,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
                   placeholder="e.g. Google"
                 />
               </div>
-
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -718,7 +649,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
                     className="border p-2 w-full rounded"
                   />
                 </div>
-
 
                 <div>
                   <label className="block mb-1 font-medium">End Date</label>
@@ -733,7 +663,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
                 </div>
               </div>
 
-
               <div>
                 <label className="flex items-center gap-2">
                   <input
@@ -747,7 +676,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
                 </label>
               </div>
 
-
               <div>
                 <label className="block mb-1 font-medium">Description</label>
                 <textarea
@@ -759,7 +687,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
                   placeholder="Describe your responsibilities and achievements..."
                 />
               </div>
-
 
               <div className="flex gap-3 mt-6">
                 <button
@@ -784,6 +711,5 @@ const SettingsTab: React.FC<SettingsTabProps> = ({ user }) => {
     </div>
   );
 };
-
 
 export default SettingsTab;

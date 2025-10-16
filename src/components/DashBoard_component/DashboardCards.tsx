@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { apiRequest, API_ENDPOINTS } from "../../config/api";
 
 const DashboardCards = () => {
   const [user, setUser] = useState<{
@@ -22,17 +23,14 @@ const DashboardCards = () => {
       }
 
       try {
-        const response = await fetch("/api/auth/me", {
+        const result = await apiRequest(API_ENDPOINTS.USERS.PROFILE, {
           method: "GET",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         });
 
-        const result = await response.json();
-
-        if (response.ok && result.user) {
+        if (result.user) {
           // Derive first name for greeting
           const fullName = result.user.fullName || "User";
           const firstName = fullName.split(" ")[0];
@@ -106,9 +104,12 @@ const DashboardCards = () => {
             />
           </div>
 
-          <button className="flex items-center text-sm text-blue-600 font-medium hover:underline">
-            <Link to={card.path}>{card.linkText} <ArrowRight className="ml-1 w-4 h-4" /></Link> 
-          </button>
+          <Link 
+            to={card.path}
+            className="flex items-center text-sm text-blue-600 font-medium hover:underline"
+          >
+            {card.linkText} <ArrowRight className="ml-1 w-4 h-4" />
+          </Link>
         </div>
       ))}
 
@@ -126,9 +127,12 @@ const DashboardCards = () => {
             />
             <div>
               <h3 className="font-semibold text-gray-800">{user?.fullName}</h3>
-              <button className="text-blue-600 text-sm font-medium hover:underline">
+              <Link 
+                to="/Profile"
+                className="text-blue-600 text-sm font-medium hover:underline"
+              >
                 View Profile
-              </button>
+              </Link>
             </div>
           </div>
           <div className="bg-yellow-100 text-yellow-700 text-xs font-semibold px-2 py-1 rounded">
@@ -144,9 +148,12 @@ const DashboardCards = () => {
         </div>
         <div className="flex items-center justify-between">
           <p className="text-xs text-gray-500">Next: Add your Experience</p>
-          <button className="bg-blue-600 text-white text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-blue-500 transition">
+          <Link 
+            to="/Profile"
+            className="bg-blue-600 text-white text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-blue-500 transition"
+          >
             Finish Your Profile
-          </button>
+          </Link>
         </div>
       </div>
     </div>

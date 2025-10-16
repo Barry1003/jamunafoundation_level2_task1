@@ -21,7 +21,7 @@ router.get("/auth", (req, res, next) => {
   passportProjects.authenticate("github-projects", { 
     scope: ["repo", "user:email"],
     session: false,
-    callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/github/callback`
+    callbackURL: process.env.GITHUB_CALLBACK_URL || 'http://localhost:5000/api/auth/github/callback'  // ✅ Changed here
   })(req, res, next);
 });
 

@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:5000/api/auth";
+const BASE_URL = "/api/auth";
 
 // Define proper TypeScript interfaces
 interface User {

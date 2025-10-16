@@ -13,7 +13,7 @@ interface User {
   authProvider: "local" | "github"; // 🆕 NEW - Auth provider
 }
 
-const API_URL = "http://localhost:5000/api/auth";
+const API_URL = "/api/auth";
 
 const Header = () => {
   const [user, setUser] = useState<User | null>(null);

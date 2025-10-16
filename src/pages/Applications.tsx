@@ -25,7 +25,7 @@ const ApplicationTracker: React.FC = () => {
 
   const fetchApplications = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/applications');
+      const response = await fetch('/api/applications');
       if (!response.ok) throw new Error('Failed to fetch applications');
       const data = await response.json();
       setApplications(data);
@@ -38,7 +38,7 @@ const ApplicationTracker: React.FC = () => {
 
   const updateStatus = async (id: string, newStatus: JobApplication['status']) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/applications/${id}`, {
+      const response = await fetch(`/api/applications/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -56,7 +56,7 @@ const ApplicationTracker: React.FC = () => {
 
   const updateNotes = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/applications/${id}`, {
+      const response = await fetch(`/api/applications/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notes: editNotes })
@@ -78,7 +78,7 @@ const ApplicationTracker: React.FC = () => {
     if (!confirm('Are you sure you want to delete this application?')) return;
     
     try {
-      const response = await fetch(`http://localhost:5000/api/applications/${id}`, {
+      const response = await fetch(`/api/applications/${id}`, {
         method: 'DELETE'
       });
       

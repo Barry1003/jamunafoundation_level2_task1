@@ -50,7 +50,7 @@ const Profile: React.FC = () => {
 
       try {
         console.log('🔍 Fetching user from /api/auth/me');
-        const response = await fetch('http://localhost:5000/api/auth/me', {
+        const response = await fetch('/api/auth/me', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -91,7 +91,7 @@ const Profile: React.FC = () => {
 
       try {
         console.log('📋 Fetching resume for sidebar');
-        const response = await fetch(`http://localhost:5000/api/resume/${user._id}`, {
+        const response = await fetch(`/api/resume/${user._id}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

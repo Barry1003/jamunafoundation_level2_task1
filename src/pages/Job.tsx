@@ -59,7 +59,7 @@ const JobSearch: React.FC = () => {
         page: newPage.toString(),
       }).toString();
 
-      const response = await fetch(`http://localhost:5000/api/jobs?${query}`);
+      const response = await fetch(`/api/jobs?${query}`);
       
       if (!response.ok) throw new Error("Failed to fetch jobs");
       
@@ -90,7 +90,7 @@ const JobSearch: React.FC = () => {
     setSavingJob(job.job_id);
     
     try {
-      const response = await fetch('http://localhost:5000/api/applications', {
+      const response = await fetch('/api/applications', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

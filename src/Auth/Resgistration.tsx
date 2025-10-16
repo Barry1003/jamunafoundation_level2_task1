@@ -10,7 +10,7 @@ interface FormData {
   fullName?: string;
 }
 
-const URL = "http://localhost:5000/api/auth";
+const URL = "/api/auth";
 
 const LoginPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);

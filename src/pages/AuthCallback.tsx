@@ -29,7 +29,7 @@ const AuthCallback = () => {
 
       try {
         // 4️⃣ Verify the token with backend
-        const response = await fetch("http://localhost:5000/api/auth/verify", {
+        const response = await fetch("/api/auth/verify", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

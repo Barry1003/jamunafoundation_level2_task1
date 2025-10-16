@@ -16,7 +16,7 @@ const githubProjectStrategy = new GitHubStrategy(
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
     // ✅ FIXED: Callback URL now matches route mounting at /api/auth/github
-    callbackURL: process.env.GITHUB_CALLBACK_URL_PROJECTS || "http://localhost:5000/api/auth/github/callback",
+    callbackURL: process.env.GITHUB_CALLBACK_URL_PROJECTS || "/api/auth/github/callback",
     scope: ["repo", "user:email"],
     passReqToCallback: true,
   },

@@ -46,7 +46,7 @@ const ExperienceTab: React.FC<ExperienceTabProps> = ({ user }) => {
         setLoading(true);
         console.log('📋 Fetching experiences for user:', user._id);
 
-        const response = await fetch(`http://localhost:5000/api/resume/${user._id}`, {
+        const response = await fetch(`/api/resume/${user._id}`, {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,

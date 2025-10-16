@@ -41,7 +41,7 @@ const SettingsPage: React.FC = () => {  // ✅ Remove user prop, fetch internall
 
       try {
         console.log('🔍 Fetching user from /api/auth/me');
-        const response = await fetch('http://localhost:5000/api/auth/me', {
+        const response = await fetch('/api/auth/me', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -198,7 +198,7 @@ const SettingsPage: React.FC = () => {  // ✅ Remove user prop, fetch internall
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/users/${user._id}`, {
+      const response = await fetch(`/api/users/${user._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -244,7 +244,7 @@ const SettingsPage: React.FC = () => {  // ✅ Remove user prop, fetch internall
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/auth/change-password`, {
+      const response = await fetch(`/api/auth/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -310,7 +310,7 @@ const SettingsPage: React.FC = () => {  // ✅ Remove user prop, fetch internall
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/users/${user._id}/export`, {
+      const response = await fetch(`/api/users/${user._id}/export`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -347,7 +347,7 @@ const SettingsPage: React.FC = () => {  // ✅ Remove user prop, fetch internall
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/users/${user._id}/deactivate`, {
+      const response = await fetch(`/api/users/${user._id}/deactivate`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

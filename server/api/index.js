@@ -56,10 +56,16 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Configure CORS to allow credentials
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: [
+      'https://jamunafoundationlevel2task1.vercel.app', // Your frontend
+      'http://localhost:5173' // For local development
+    ],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   })
 );
+
 
 // Session middleware (required for passport and GitHub OAuth)
 app.use(

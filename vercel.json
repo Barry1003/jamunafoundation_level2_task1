@@ -1,5 +1,11 @@
 {
   "version": 2,
+  "functions": {
+    "api/**/*.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
   "builds": [
     {
       "src": "package.json",
@@ -21,5 +27,7 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ]
+  ],
+  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "npm run build"
 }

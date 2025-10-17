@@ -5,6 +5,8 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import session from "express-session";
 import passport from "../config/passport.js";
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 // Import routes
 import authRoutes from "../routes/authRoutes.js";
@@ -14,7 +16,12 @@ import projectRoutes from "../routes/projectRoutes.js";
 import applicationRoutes from "../routes/applicationRoutes.js";
 import resumeRoutes from "../routes/resume.js";
 
-dotenv.config();
+// Setup __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load environment variables
+dotenv.config({ path: join(__dirname, '../.env') });
 
 const app = express();
 
@@ -30,16 +37,33 @@ const connectDB = async () => {
   }
 
   try {
-    const db = await mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/job-tracker", {
+    console.log("🔌 Attempting MongoDB connection...");
+    console.log("📍 MongoDB URI exists:", !!process.env.MONGODB_URI);
+    
+    const sanitizedUri = process.env.MONGODB_URI?.replace(/:[^:@]+@/, ':****@');
+    console.log("🔗 Connection URI:", sanitizedUri);
+    
+    if (!process.env.MONGODB_URI) {
+      throw new Error("MONGODB_URI is not defined in environment variables");
+    }
+    
+    // Enhanced connection options for better reliability
+    const db = await mongoose.connect(process.env.MONGODB_URI, {
       maxPoolSize: 10,
       minPoolSize: 2,
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 60000,
+      connectTimeoutMS: 60000,
+      socketTimeoutMS: 60000,
+      family: 4, // Force IPv4
+      retryWrites: true,
+      retryReads: true,
     });
     
     isConnected = db.connections[0].readyState === 1;
     console.log("✅ MongoDB connected successfully");
+    console.log("📊 Database name:", db.connections[0].name);
   } catch (err) {
-    console.error("❌ MongoDB connection error:", err);
+    console.error("❌ MongoDB connection error:", err.message);
     throw err;
   }
 };

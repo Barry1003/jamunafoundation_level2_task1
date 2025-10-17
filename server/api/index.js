@@ -77,26 +77,49 @@ connectDB();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Configure CORS to allow credentials
+// Define allowed origins for CORS
+const allowedOrigins = [
+  'https://jamunafoundationlevel2task1.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:5000',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
+// Configure CORS to allow your frontend
 app.use(
   cors({
-    origin: true, // Allow all origins temporarily to debug
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, Postman, curl)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.log('❌ CORS blocked origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     exposedHeaders: ['Set-Cookie'],
-    maxAge: 86400 // 24 hours
+    maxAge: 86400,
+    optionsSuccessStatus: 200
   })
 );
 
-// Explicit CORS headers for all responses (Vercel serverless compatibility)
+// Explicit CORS headers for all responses (Additional layer for compatibility)
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   
-  // Handle preflight
+  // Handle preflight requests
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -197,7 +220,8 @@ app.get("/api/health", (req, res) => {
     status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    mongodb: isConnected ? 'connected' : 'disconnected'
+    mongodb: isConnected ? 'connected' : 'disconnected',
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
@@ -214,7 +238,8 @@ app.get("/", (req, res) => {
 app.use((req, res) => {
   res.status(404).json({
     message: "Route not found",
-    path: req.originalUrl
+    path: req.originalUrl,
+    method: req.method
   });
 });
 

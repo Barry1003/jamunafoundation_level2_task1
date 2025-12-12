@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { API_BASE_URL } from "../config/api";
 
 const AuthCallback = () => {
   const [searchParams] = useSearchParams();
@@ -29,7 +30,7 @@ const AuthCallback = () => {
 
       try {
         // 4️⃣ Verify the token with backend
-        const response = await fetch("/api/auth/verify", {
+        const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

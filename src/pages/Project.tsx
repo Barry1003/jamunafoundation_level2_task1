@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Github, GitBranch, Star, GitFork, ExternalLink, Plus, Trash2, CheckCircle, X } from "lucide-react";
+import { API_BASE_URL } from "../config/api";
 
 // --- INTERFACE DEFINITIONS ---
 
@@ -63,7 +64,7 @@ interface NewProjectState {
 }
 
 // --- CONSTANTS ---
-const BASE_URL  = 'http://localhost:5000';
+const BASE_URL = API_BASE_URL;
 
 const ProjectTracker: React.FC = () => {
   // Main auth state
@@ -247,8 +248,7 @@ const ProjectTracker: React.FC = () => {
     setError(null);
     
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const projectData: any = {
+      const projectData: Record<string, unknown> = {
         name: newProject.name,
         description: newProject.description,
         status: newProject.status,

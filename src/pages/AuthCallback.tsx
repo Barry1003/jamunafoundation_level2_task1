@@ -71,7 +71,7 @@ const AuthCallback = () => {
 
   // 🎨 Loading UI while processing authentication
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-700">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-500 to-blue-700">
       <div className="text-center">
         {/* Spinner Animation */}
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-white mx-auto mb-4"></div>

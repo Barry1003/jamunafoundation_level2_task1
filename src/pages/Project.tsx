@@ -756,7 +756,7 @@ const ProjectTracker: React.FC = () => {
                               </div>
                             </div>
                             {selectedRepo?.id === repo.id && (
-                              <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                              <CheckCircle className="w-5 h-5 text-blue-600 shrink-0" />
                             )}
                           </div>
                         ))}

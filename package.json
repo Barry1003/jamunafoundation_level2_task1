@@ -8,8 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "server": "cd server && node server.js",
-    "server:dev": "cd server && nodemon server.js"
+    "server": "cd server && node api/index.js",
+    "server:dev": "cd server && nodemon api/index.js"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.13",

@@ -211,7 +211,37 @@ app.get("/api/jobs", (req, res) => {
 
   apiReq.end();
 });
-
+// ==========================================
+// TEST CHECK
+// ==========================================
+// Add this test endpoint
+app.get("/api/db-test", async (req, res) => {
+  try {
+    console.log('🔍 Testing MongoDB connection...');
+    console.log('📍 MongoDB URI exists:', !!process.env.MONGODB_URI);
+    
+    // Try to connect
+    await connectDB();
+    
+    // Try a simple query
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    
+    res.json({ 
+      success: true,
+      message: 'MongoDB connected successfully!',
+      isConnected,
+      collections: collections.map(c => c.name),
+      dbName: mongoose.connection.db.databaseName
+    });
+  } catch (error) {
+    console.error('❌ MongoDB test failed:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
 // ==========================================
 // HEALTH CHECK
 // ==========================================

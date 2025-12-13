@@ -1,3 +1,4 @@
+import "../config/env-loader.js"; // Must be first
 import express from "express";
 import https from "https";
 import cors from "cors";

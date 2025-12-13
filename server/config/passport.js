@@ -3,14 +3,8 @@ import passport from "passport";
 import { Strategy as GitHubStrategy } from "passport-github2";
 import User from "../models/User.js";
 
-// 🔧 Load environment variables FIRST
-dotenv.config();
-
-// 🔧 Validate required environment variables
-if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET) {
-  console.error("❌ ERROR: GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET must be set in .env file");
-  process.exit(1);
-}
+// 🔧 Environment variables should be loaded by env-loader.js BEFORE this file
+// if (!process.env.GITHUB_CLIENT_ID) console.warn("⚠️ Passport warning: GITHUB_CLIENT_ID missing");
 
 // 🔧 Configure GitHub OAuth Strategy
 passport.use(
